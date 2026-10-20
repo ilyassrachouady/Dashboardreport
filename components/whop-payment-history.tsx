@@ -4,6 +4,7 @@ import type { Dataset } from "../lib/model";
 import { matchedContact } from "../lib/payment-history";
 import { salesPerformance } from "../lib/sales-performance";
 import { SelectControl } from "./form-controls";
+import { AcquisitionFunnel } from "./acquisition-funnel";
 
 function usd(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -117,6 +118,8 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
           not a compensation statement.
         </p>
       </section>
+
+      <AcquisitionFunnel data={data} />
 
       <section className="panel whop-history">
         <div className="panel-head">
