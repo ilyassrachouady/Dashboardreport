@@ -13,8 +13,11 @@ function unauthorized() {
 }
 
 export function proxy(request: NextRequest) {
-  // Server-to-server ingestion has its own Bearer-token authentication.
-  if (request.nextUrl.pathname === "/api/ingest") {
+  // Server-to-server ingestion and Vercel Cron use their own Bearer-token authentication.
+  if (
+    request.nextUrl.pathname === "/api/ingest" ||
+    request.nextUrl.pathname.startsWith("/api/cron/")
+  ) {
     return NextResponse.next();
   }
 
