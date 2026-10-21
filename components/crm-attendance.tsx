@@ -1,4 +1,5 @@
 "use client";
+import { MetricHelp } from "./metric-help";
 import { useState } from "react";
 import type { Dataset } from "../lib/model";
 import { attendanceStatuses, crmAttendanceRows } from "../lib/crm-attendance";
@@ -12,10 +13,7 @@ export function CrmAttendance({ data }: { data: Dataset }) {
       <div className="panel-head">
         <div>
           <h2>Attendance · GHL</h2>
-          <p>
-            Current Attendance field on each CRM contact. Company-wide snapshot;
-            report date and webinar filters do not apply.
-          </p>
+          <MetricHelp label="Attendance scope">Current contact status in GHL. Company-wide; date and webinar filters do not apply.</MetricHelp>
         </div>
         <button className="secondary" onClick={() => setFilter("All")}>
           Show all contacts
@@ -36,9 +34,7 @@ export function CrmAttendance({ data }: { data: Dataset }) {
             <div className="kpi-value">
               {available ? rows.filter((r) => r.status === status).length : "—"}
             </div>
-            <div className="kpi-detail">
-              Unique CRM contacts · view contacts ↗
-            </div>
+
           </button>
         ))}
       </div>

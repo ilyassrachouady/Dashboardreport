@@ -2317,3 +2317,49 @@ input,textarea{font:inherit;border-radius:4px;border-color:#dedee4;accent-color:
 @media(max-width:850px){.sales-payment-workspace .kpi-grid,.sales-payment-workspace .sales-acquisition-funnel .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sales-payment-workspace .panel-head{flex-wrap:wrap}}
 @media(max-width:550px){.sales-payment-workspace .panel-head{padding:20px 16px 0}.sales-payment-workspace .kpi-grid{margin:18px 16px;gap:9px}.sales-payment-workspace .kpi{min-height:130px;padding:15px 12px}.sales-payment-workspace .kpi-value{font-size:26px}.sales-payment-workspace .kpi-label{font-size:11px}.sales-payment-workspace .kpi-detail{font-size:10px}.sales-payment-workspace .payment-provider-total{margin:18px 16px 0}.sales-payment-workspace .revenue-trend-note{padding:12px 16px}}
 .sales-payment-workspace .crm-attendance .kpi[aria-pressed="true"]{border-color:#ffaf9d;background:#fff8f5}.crm-attendance .table-scroll{max-height:380px;overflow:auto}.crm-attendance thead th{position:sticky;top:0;z-index:1}.crm-attendance a{color:#e04e35;font-size:11px}
+
+/* Clear metric hierarchy, with definitions available on demand. */
+.kpi { overflow:visible; }
+.metric-help { position:relative; display:inline-block; flex-shrink:0; }
+.metric-help summary { display:flex;align-items:center;justify-content:center;width:26px;height:26px;list-style:none;cursor:pointer;border-radius:5px;color:#9999a3; }
+.metric-help summary::-webkit-details-marker { display:none; }
+.metric-help summary:hover,.metric-help[open] summary { background:#f4f4f6;color:#37373f; }
+.metric-help summary:focus-visible,.metric-card-action:focus-visible { outline:2px solid #ff5539;outline-offset:3px; }
+.metric-help-content { position:absolute;right:0;top:32px;z-index:30;width:260px;max-width:calc(100vw - 48px);padding:13px 15px;background:#fff;border:1px solid #e5e5e9;border-radius:7px;box-shadow:0 8px 28px #18181b14;font-size:12px;line-height:1.6;color:#62626d;font-weight:400;letter-spacing:normal;text-align:left; }
+.kpi > .metric-help { position:absolute;right:12px;bottom:12px; }
+.kpi:has(.metric-help[open]) { z-index:35; }
+.panel-head > div:has(> .metric-help) { display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+.panel-head > div > .eyebrow { width:100%; }
+.executive-metrics .metric-card { padding:0;min-height:146px;border-radius:8px;border-color:#e7e7ec;background:#fff;box-shadow:0 1px 2px #18181b03; }
+.executive-metrics .metric-card.highlight { background:#fff8f5;border-color:#ffc8ba; }
+.executive-metrics .metric-card.highlight .kpi-value { color:#18181b; }
+.metric-card-action { display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;width:100%;height:100%;padding:20px 22px;text-align:left;border-radius:8px;gap:0; }
+.metric-card-action:hover { background:#18181b02; }
+.executive-metrics .metric-card .kpi-label { font-size:12px;font-weight:500;color:#62626c;line-height:1.5; }
+.executive-metrics .metric-card .kpi-label svg { color:#92929d; }
+.executive-metrics .metric-card .kpi-value { margin:15px 0 14px;font-size:32px;font-weight:650;line-height:1;letter-spacing:-1.1px;font-variant-numeric:tabular-nums; }
+.metric-card-source { display:flex;align-items:center;gap:6px;color:#8b8b96;font-size:10px;line-height:1.4; }
+.metric-card-source svg { opacity:0;transition:opacity .15s; }
+.metric-card-action:hover .metric-card-source svg,.metric-card-action:focus-visible .metric-card-source svg { opacity:1; }
+.whop-balance { border-radius:9px; }
+.whop-balance .panel-head { padding-bottom:10px; }
+.whop-balance .whop-balance-main { padding-bottom:22px; }
+.whop-balance .whop-balance-main strong { font-size:42px;letter-spacing:-1.8px;line-height:1.15; }
+.whop-balance .input-state { color:#328367;font-size:11px; }
+.balance-breakdown { border-top:1px solid #eeeef2; }
+.balance-breakdown > summary { padding:13px 22px;cursor:pointer;font-size:12px;font-weight:500;color:#5e5e69; }
+.balance-breakdown > summary span { margin-left:8px;font-size:10px;font-weight:400;color:#92929b; }
+.reporting-details { border-top:1px solid #f0f0f3;font-size:11px;color:#777782; }
+.reporting-details > summary { padding:12px 24px;cursor:pointer;width:fit-content; }
+.reporting-details > div { padding:0 24px 16px;line-height:1.7;max-width:950px; }
+.chart-meta { padding:0 22px 14px;font-size:10px;color:#92929d; }
+.revenue-trend-summary span { font-size:10px; }
+.executive-status { background:transparent;border:0;padding:0 2px;margin-bottom:0; }
+.reporting-badge { padding:3px 7px!important;border:1px solid #eee5d7!important;background:#fffcf5;border-radius:4px;color:#8a7145;line-height:1.4; }
+.sales-payment-workspace .kpi { min-height:116px;padding-bottom:30px;border-radius:8px; }
+.sales-payment-workspace .kpi-value { font-size:34px; }
+@media(max-width:800px) { .executive-metrics .metric-card { min-height:136px; }.metric-card-action {padding:18px}.executive-metrics .metric-card .kpi-value {font-size:29px;} }
+@media(max-width:480px) { .executive-metrics { grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }.executive-metrics .metric-card .kpi-label {font-size:11px;min-height:32px;align-items:flex-start;}.executive-metrics .metric-card .kpi-value {font-size:26px;}.metric-card-action {padding:16px 13px;}.whop-balance .whop-balance-main strong {font-size:34px;}.kpi > .metric-help {right:6px;bottom:6px;} }
+@media(max-width:600px) {
+  .metric-help[open] .metric-help-content {position:fixed;left:50%;right:auto;top:auto;bottom:24px;transform:translateX(-50%);width:320px;max-width:calc(100vw - 32px);box-shadow:0 4px 32px #18181b24;z-index:100;}
+}

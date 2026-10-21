@@ -1,4 +1,5 @@
 "use client";
+import { MetricHelp } from "./metric-help";
 import type { Dataset } from "../lib/model";
 import { crmPerformance } from "../lib/crm-performance";
 import { PaymentWorkspace } from "./payment-workspace";
@@ -26,41 +27,41 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
         <div className="panel-head">
           <div>
             <h2>Closer & payment performance · GHL</h2>
-            <p>
+            <MetricHelp label="CRM reporting scope">
               Current GHL contact fields only: Attendance, Call Outcome, Closer,
               Payment Structure, Agreed Total Investment and Cash Collected.
-            </p>
+            </MetricHelp>
           </div>
         </div>
         <div className="kpi-grid">
           <div className="kpi">
             <div className="kpi-label">Attended contacts</div>
             <div className="kpi-value">{available ? p.attended : "—"}</div>
-            <div className="kpi-detail">GHL Attendance = Attended</div>
+            <MetricHelp>GHL Attendance = Attended</MetricHelp>
           </div>
           <div className="kpi">
             <div className="kpi-label">Sold contacts</div>
             <div className="kpi-value">{available ? p.sold : "—"}</div>
-            <div className="kpi-detail">GHL Call Outcome = Sold</div>
+            <MetricHelp>GHL Call Outcome = Sold</MetricHelp>
           </div>
           <div className="kpi">
             <div className="kpi-label">PIF share · CRM</div>
             <div className="kpi-value">
               {available ? percent(p.pifRate) : "—"}
             </div>
-            <div className="kpi-detail">
+            <MetricHelp>
               {p.pif} PIF / {p.classified} contacts with a recognised Payment
               Structure
-            </div>
+            </MetricHelp>
           </div>
           <div className="kpi">
             <div className="kpi-label">Cash collected · GHL</div>
             <div className="kpi-value">
               {available ? usd(p.cash) : "—"}
             </div>
-            <div className="kpi-detail">
+            <MetricHelp>
               Sum of GHL Cash Collected · includes first instalments
-            </div>
+            </MetricHelp>
           </div>
         </div>
         {available ? (
@@ -107,7 +108,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
               "GHL reporting fields have not been loaded."}
           </p>
         )}
-        <p className="revenue-trend-note">
+        <details className="reporting-details"><summary>Reporting details</summary><div>
           Each contact counts once, under the Closer field in GHL; a missing
           closer stays Unassigned. PIF share = PIF / (PIF + Manual Payment Plan
           + Financing). Missing or unrecognised structures are excluded, not
@@ -115,13 +116,13 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
           Cash is the amount entered in GHL Cash Collected, including first payments on plans; it is not the full agreed investment or a separate verified receipt total. Initial payments are not added a second time. Current contact snapshots are independent of report date/webinar
           filters and do not represent historical call counts. Whop receipts do
           not determine any CRM classification.
-        </p>
+        </div></details>
         {available && p.missingPlans > 0 && (
-          <p className="revenue-trend-note">
+          <details className="reporting-details"><summary>Reporting details</summary><div>
             {p.missingPlans} sold contacts have no recognised Payment Structure
             in GHL. Fill that field to include them in the PIF/manual/financing
             mix.
-          </p>
+          </div></details>
         )}
       </section>
       <CrmAttendance data={data} />

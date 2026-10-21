@@ -1,5 +1,6 @@
 "use client";
 import { WhopPaymentHistory } from "./whop-payment-history";
+import { MetricHelp } from "./metric-help";
 import { WhopBalance } from "./whop-balance";
 import { crmCloserCash } from "../lib/crm-cash";
 import { useLivePayments } from "./use-live-payments";
@@ -361,7 +362,7 @@ export default function Dashboard({
       action: () => setView("Sales"),
     },
     {
-      name: "Receipts without CRM match",
+      name: "Unmatched receipts",
       value: cashAvailable ? usd(unmatchedCash) : "—",
       detail: "Excluded from source / closer attribution",
       icon: AlertCircle,
@@ -399,7 +400,7 @@ export default function Dashboard({
         ),
     },
     {
-      name: "Known CRM leads",
+      name: "CRM leads",
       value: m.leads,
       detail: "Imported contact records",
       icon: Users,
@@ -426,7 +427,7 @@ export default function Dashboard({
       action: () => setView("Sales"),
     },
     {
-      name: "Recorded contract value",
+      name: "Agreed investment",
       value: usd(m.contract),
       detail: "Recorded agreements · not cash · includes tests",
       icon: Layers,
@@ -436,21 +437,14 @@ export default function Dashboard({
   const metricTile = (index: number) => {
     const { name, value, detail, icon: Icon, action } = kpis[index];
     return (
-      <button
-        key={name}
-        className={`kpi ${index === 0 ? "highlight" : ""}`}
-        onClick={action}
-      >
-        <div className="kpi-label">
-          {name}
-          <Icon size={14} />
-        </div>
-        <div className="kpi-value">
-          {typeof value === "number" ? value.toLocaleString("en-US") : value}
-          <ArrowUpRight size={16} />
-        </div>
-        <div className="kpi-detail">{detail}</div>
-      </button>
+      <div key={name} className={`kpi metric-card ${index === 0 ? "highlight" : ""}`}>
+        <button className="metric-card-action" onClick={action}>
+          <span className="kpi-label">{name}<Icon size={15} aria-hidden="true" /></span>
+          <span className="kpi-value">{typeof value === "number" ? value.toLocaleString("en-US") : value}</span>
+          <span className="metric-card-source">{[0, 1].includes(index) ? "Whop" : [5, 6, 7].includes(index) ? "Payment Desk" : index === 2 ? "WebinarJam" : "GHL"}<ArrowUpRight size={13} aria-hidden="true" /></span>
+        </button>
+        <MetricHelp label={`${name}: definition`}>{detail}</MetricHelp>
+      </div>
     );
   };
   const title =
@@ -896,13 +890,14 @@ export default function Dashboard({
                       ? "Whop history connected"
                       : "Payment history needs attention"}
                   </strong>
-                  <span>USD reporting · test activity included</span>
+                  <span>USD</span>
+                  <span className="reporting-badge">Test activity included</span>
                 </div>
                 <button
                   className="quiet"
                   onClick={() => setView("Data Sources")}
                 >
-                  Review data coverage <ArrowUpRight size={13} />
+                  Data health <ArrowUpRight size={13} />
                 </button>
               </div>
               <div className="kpi-grid executive-metrics">
@@ -969,10 +964,7 @@ export default function Dashboard({
                         </button>
                       ))}
                   </div>
-                  <p className="executive-panel-note">
-                    Registration source mix only. Revenue attribution requires a
-                    verified CRM match.
-                  </p>
+
                 </Panel>
               </div>
               <Panel
@@ -1022,10 +1014,7 @@ export default function Dashboard({
                 />
               </Panel>
               <div className="executive-footnote">
-                <span>
-                  Recorded calls and agreements are incomplete. These totals are
-                  independent measures, not a conversion funnel.
-                </span>
+                <MetricHelp label="Reporting scope">Recorded calls and agreements are incomplete. These totals are independent measures, not a conversion funnel.</MetricHelp>
                 <button
                   className="quiet"
                   onClick={() => setView("Data Sources")}

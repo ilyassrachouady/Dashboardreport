@@ -1,4 +1,5 @@
 "use client";
+import { MetricHelp } from "./metric-help";
 
 import { useMemo, useState } from "react";
 import type { Dataset } from "../lib/model";
@@ -105,37 +106,37 @@ export function AcquisitionFunnel({ data }: { data: Dataset }) {
           <div className="kpi-value">
             {totals.registrations.toLocaleString()}
           </div>
-          <div className="kpi-detail">Imported registration records</div>
+          <MetricHelp>Imported registration records</MetricHelp>
         </div>
         <div className="kpi">
           <div className="kpi-label">Booked calls</div>
           <div className="kpi-value">{totals.booked.toLocaleString()}</div>
-          <div className="kpi-detail">
+          <MetricHelp>
             Calendar appointment records
-          </div>
+          </MetricHelp>
         </div>
         <div className="kpi">
           <div className="kpi-label">Attended calls</div>
           <div className="kpi-value">{totals.attended.toLocaleString()}</div>
-          <div className="kpi-detail">
+          <MetricHelp>
             Payment Desk records · incomplete history
-          </div>
+          </MetricHelp>
         </div>
         <div className="kpi">
           <div className="kpi-label">Recorded sales</div>
           <div className="kpi-value">{totals.sales.toLocaleString()}</div>
-          <div className="kpi-detail">
+          <MetricHelp>
             Agreements linked to recorded attended calls
-          </div>
+          </MetricHelp>
         </div>
         <div className="kpi">
           <div className="kpi-label">CRM-reported cash</div>
           <div className="kpi-value">
             {crmCloserCash(data).contacts ? usd(totals.cash) : "—"}
           </div>
-          <div className="kpi-detail">
+          <MetricHelp>
             GHL Cash Collected · unique linked contacts
-          </div>
+          </MetricHelp>
         </div>
       </div>
 
@@ -172,13 +173,13 @@ export function AcquisitionFunnel({ data }: { data: Dataset }) {
           No attributed funnel activity yet.
         </div>
       )}
-      <p className="revenue-trend-note">
+      <details className="reporting-details"><summary>Reporting details</summary><div>
         Cash uses current GHL values once per linked contact, grouped by
         normalized source; it is not a historical Whop receipt total. A sale
         only enters this funnel when it is linked to an attended recorded sales
         call, so incomplete Payment Desk call history can understate conversion
         counts. Conversion percentages are omitted because these records do not establish a shared session or time cohort.
-      </p>
+      </div></details>
     </section>
   );
 }

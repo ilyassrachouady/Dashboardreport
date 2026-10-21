@@ -1,3 +1,4 @@
+import { MetricHelp } from "./metric-help";
 import type { Dataset } from "../lib/model";
 const usd = (amount: string) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
@@ -11,18 +12,15 @@ export function WhopBalance({ data }: { data: Dataset }) {
         <div>
           <div className="eyebrow">Direct from Whop</div>
           <h2>Total account balance</h2>
-          <p>
-            Current account holdings, including available, pending and reserved
-            funds. Independent of report filters.
-          </p>
+          <MetricHelp label="Account balance definition">Available, pending and reserved funds across all currencies. Independent of report filters; not gross sales or withdrawable cash.</MetricHelp>
         </div>
         <span className="input-state">
-          {data.whopBalanceError ? "Refresh failed" : "15-second refresh"}
+          {data.whopBalanceError ? "Refresh failed" : "Live · Whop"}
         </span>
       </div>
       <div className="whop-balance-main">
         <strong>{b ? usd(b.totalUsd) : "Unavailable"}</strong>
-        <span>USD · Whop’s own conversion</span>
+        <span>USD</span>
       </div>
       {data.whopBalanceError && (
         <p className="error-banner">
@@ -32,6 +30,8 @@ export function WhopBalance({ data }: { data: Dataset }) {
       )}
       {b && (
         <>
+          <details className="balance-breakdown">
+          <summary>Balance breakdown <span>{b.currencies.length} currencies</span></summary>
           <div className="table-scroll">
             <table>
               <thead>
@@ -66,6 +66,7 @@ export function WhopBalance({ data }: { data: Dataset }) {
             change the USD total. This is account balance, not gross sales or
             immediately withdrawable cash.
           </p>
+          </details>
         </>
       )}
     </section>

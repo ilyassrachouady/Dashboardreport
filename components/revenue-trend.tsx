@@ -1,4 +1,5 @@
 "use client";
+import { MetricHelp } from "./metric-help";
 import { useMemo, useState } from "react";
 import {
   Area,
@@ -130,14 +131,13 @@ export function RevenueTrend({
       <div className="panel-head">
         <div>
           <h2>Performance over time</h2>
-          <p>
-            One metric, one scale.{" "}
+          <MetricHelp label="Chart definition">
             {isCash
               ? "Successful USD payments, less refunds, before fees."
               : metric === "sales"
                 ? "Payment Desk agreements only; incomplete and includes tests."
                 : "Registration events by signup date."}
-          </p>
+          </MetricHelp>
         </div>
         <div className="revenue-trend-controls">
           <SelectControl
@@ -232,10 +232,7 @@ export function RevenueTrend({
           </ResponsiveContainer>
         </div>
       )}
-      <div className="revenue-trend-note">
-        UTC · Zero-activity dates included · Revenue and audience counts use
-        separate views
-      </div>
+      <div className="chart-meta">UTC</div>
     </section>
   );
 }

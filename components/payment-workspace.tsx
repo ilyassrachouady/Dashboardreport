@@ -1,4 +1,5 @@
 "use client";
+import { MetricHelp } from "./metric-help";
 import { useEffect, useRef, useState } from "react";
 import type { Dataset, WhopPayment } from "../lib/model";
 import { matchedContact } from "../lib/payment-history";
@@ -101,37 +102,37 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
               <div className="kpi" key={s.label}>
                 <div className="kpi-label">{s.label}</div>
                 <div className="kpi-value">{s.contacts}</div>
-                <div className="kpi-detail">
+                <MetricHelp>
                   contacts ·{" "}
                   {pct(totalContacts ? s.contacts / totalContacts : null)} of
                   contacts with a recognised structure
-                </div>
+                </MetricHelp>
               </div>
             ))}
             <div className="kpi">
               <div className="kpi-label">Classified contacts</div>
               <div className="kpi-value">{totalContacts}</div>
-              <div className="kpi-detail">
+              <MetricHelp>
                 {analytics.structures[3].contacts} unrecognised values · blank
                 fields excluded
-              </div>
+              </MetricHelp>
             </div>
           </div>
         )}
-        <p className="revenue-trend-note">
+        <details className="reporting-details"><summary>Reporting details</summary><div>
           Latest-call snapshot, not lifetime purchases.{" "}
           {data.crmStructuresFetchedAt
             ? `GHL checked ${new Date(data.crmStructuresFetchedAt).toLocaleString("en-GB")}. `
             : ""}
           Read directly from GHL on each 15-second live refresh while this tab
           is visible.
-        </p>
+        </div></details>
         {!data.crmStructuresError && totalContacts === 0 && (
-          <p className="revenue-trend-note">
+          <details className="reporting-details"><summary>Reporting details</summary><div>
             No GHL contacts have Payment Structure populated yet. The new
             Payment Desk mapping fills this on future completed calls; existing
             purchases have not been backfilled.
-          </p>
+          </div></details>
         )}
       </section>
       <section className="panel whop-history">
@@ -196,28 +197,28 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
           <div className="kpi">
             <div className="kpi-label">Gross payment volume · {currency}</div>
             <div className="kpi-value">{format(analytics.gross)}</div>
-            <div className="kpi-detail">
+            <MetricHelp>
               Successful charges, before refunds and fees
-            </div>
+            </MetricHelp>
           </div>
           <div className="kpi">
             <div className="kpi-label">Refunds · {currency}</div>
             <div className="kpi-value">{format(analytics.refunds)}</div>
-            <div className="kpi-detail">
+            <MetricHelp>
               Current refunds on selected payments
-            </div>
+            </MetricHelp>
           </div>
           <div className="kpi">
             <div className="kpi-label">Net receipts · {currency}</div>
             <div className="kpi-value">{format(analytics.net)}</div>
-            <div className="kpi-detail">Gross less refunds · before fees</div>
+            <MetricHelp>Gross less refunds · before fees</MetricHelp>
           </div>
           <div className="kpi">
             <div className="kpi-label">Successful charges</div>
             <div className="kpi-value">{analytics.paid.length}</div>
-            <div className="kpi-detail">
+            <MetricHelp>
               Whop payment events · selected currency and dates
-            </div>
+            </MetricHelp>
           </div>
         </div>
         <div className="payment-ledger-controls">
@@ -292,7 +293,7 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
         {!rows.length && (
           <p className="revenue-trend-empty">No matching transactions.</p>
         )}
-        <p className="revenue-trend-note">
+        <details className="reporting-details"><summary>Reporting details</summary><div>
           {rows.length} shown · {analytics.paid.length} successful charges /{" "}
           {analytics.attempts} attempts in selected currency and UTC date range.
           Totals ignore search/status filters.{" "}
@@ -302,7 +303,7 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
           Other dashboard cohort filters do not apply here. Whop totals only
           reconcile with the same account, dates, currency and volume
           definition; no FX conversion is applied.
-        </p>
+        </div></details>
       </section>
       <dialog
         ref={dialog}
