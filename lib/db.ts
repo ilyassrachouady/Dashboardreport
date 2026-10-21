@@ -93,12 +93,20 @@ export async function loadDataset(): Promise<{
             process.env.GHL_LOCATION_ID || "",
           );
           data.crmPaymentStructures = context.rows;
+          data.crmCash = context.cashRows;
+          data.crmCallSnapshots = context.snapshots;
+          data.crmSnapshotError = context.snapshotError;
+          data.crmAttendance = context.attendanceRows;
+          data.crmAttendanceError = context.attendanceError;
+          data.crmCashError = context.cashError;
           data.crmStructuresFetchedAt = context.fetchedAt;
         } catch (e) {
           data.crmStructuresError =
             e instanceof Error
               ? e.message
               : "CRM payment structures unavailable";
+          data.crmCashError = "GHL Cash Collected could not be refreshed";
+          data.crmAttendanceError = "GHL Attendance could not be refreshed";
         }
       })(),
       (async () => {

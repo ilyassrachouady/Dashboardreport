@@ -123,7 +123,8 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
           {data.crmStructuresFetchedAt
             ? `GHL checked ${new Date(data.crmStructuresFetchedAt).toLocaleString("en-GB")}. `
             : ""}
-          GHL classification refreshes approximately every 5 minutes.
+          Read directly from GHL on each 15-second live refresh while this tab
+          is visible.
         </p>
         {!data.crmStructuresError && totalContacts === 0 && (
           <p className="revenue-trend-note">
@@ -138,7 +139,7 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
           <div>
             <h2>Whop transactions & volume</h2>
             <p>
-              Company-wide payment history · refreshes every 30 seconds while
+              Company-wide payment history · refreshes every 15 seconds while
               this dashboard is visible.
             </p>
           </div>
@@ -212,43 +213,13 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
             <div className="kpi-detail">Gross less refunds · before fees</div>
           </div>
           <div className="kpi">
-            <div className="kpi-label">PIF transaction share</div>
-            <div className="kpi-value">{pct(analytics.pifRate)}</div>
+            <div className="kpi-label">Successful charges</div>
+            <div className="kpi-value">{analytics.paid.length}</div>
             <div className="kpi-detail">
-              {analytics.structures[0].transactions} PIF /{" "}
-              {analytics.classified} classified successful charges
+              Whop payment events · selected currency and dates
             </div>
           </div>
         </div>
-        <div className="payment-mix-bars">
-          {analytics.structures.map((s) => (
-            <div key={s.label}>
-              <div>
-                <span>{s.label}</span>
-                <b>
-                  {s.transactions} ·{" "}
-                  {pct(
-                    analytics.paid.length
-                      ? s.transactions / analytics.paid.length
-                      : null,
-                  )}
-                </b>
-              </div>
-              <progress
-                value={s.transactions}
-                max={analytics.paid.length || 1}
-                aria-label={`${s.label} share of successful payments`}
-              />
-            </div>
-          ))}
-        </div>
-        <p className="revenue-trend-note">
-          Mix bars include unknown transactions; PIF share excludes unknowns.
-          Classification uses linked agreements or explicit financing data, then
-          the latest GHL field where a contact is verified. A current contact
-          field may differ from an older purchase. These are payment-event
-          percentages, not agreement conversion rates.
-        </p>
         <div className="payment-ledger-controls">
           <input
             aria-label="Search Whop transactions"
@@ -276,7 +247,7 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
               <tr>
                 <th>Paid / created (UTC)</th>
                 <th>Customer</th>
-                <th>Structure</th>
+                <th>CRM structure (current)</th>
                 <th>Status</th>
                 <th>Gross</th>
                 <th>Refunded</th>

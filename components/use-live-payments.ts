@@ -16,7 +16,7 @@ export function useLivePayments(initial: Dataset, demo: boolean) {
       if (disposed || inFlight) return;
       clearTimeout(timer);
       if (document.visibilityState !== "visible") {
-        timer = setTimeout(refresh, 30000);
+        timer = setTimeout(refresh, 15000);
         return;
       }
       controller = new AbortController();
@@ -44,12 +44,15 @@ export function useLivePayments(initial: Dataset, demo: boolean) {
             whopHistoryError:
               e instanceof Error ? e.message : "Payment refresh failed",
             whopBalanceError: "Live balance refresh failed",
+            crmCashError: "Live CRM refresh failed",
+            crmAttendanceError: "Live CRM refresh failed",
+            crmStructuresError: "Live CRM refresh failed",
           }));
       } finally {
         inFlight = false;
         if (!disposed) {
           setRefreshing(false);
-          timer = setTimeout(refresh, 30000);
+          timer = setTimeout(refresh, 15000);
         }
       }
     };
@@ -57,7 +60,7 @@ export function useLivePayments(initial: Dataset, demo: boolean) {
       if (document.visibilityState === "visible") void refresh();
     };
     document.addEventListener("visibilitychange", onVisible);
-    timer = setTimeout(refresh, 30000);
+    timer = setTimeout(refresh, 15000);
     return () => {
       disposed = true;
       clearTimeout(timer);

@@ -11,11 +11,9 @@ export type Structure = (typeof structureLabels)[number];
 export function normalizeStructure(
   value: string | null | undefined,
 ): Structure {
-  const v = (value || "").trim().toLowerCase().replace(/[_-]+/g, " ");
-  if (["pif", "pay in full (pif)", "pay in full"].includes(v))
-    return "Pay in Full (PIF)";
-  if (["two", "three", "custom", "manual payment plan"].includes(v))
-    return "Manual Payment Plan";
+  const v = (value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (v === "pay in full (pif)") return "Pay in Full (PIF)";
+  if (v === "manual payment plan") return "Manual Payment Plan";
   if (v === "financing") return "Financing";
   return "Unknown";
 }
@@ -25,26 +23,6 @@ export function paymentStructure(
   data: Dataset,
   p: WhopPayment,
 ): { value: Structure; source: string } {
-  if (
-    (p.financing_installments || 0) > 0 ||
-    ["klarna", "affirm", "afterpay", "sezzle"].includes(
-      p.payment_method?.toLowerCase() || "",
-    )
-  )
-    return { value: "Financing", source: "Whop financing method" };
-  const saved = data.payments.find(
-    (r) => r.provider === "whop" && r.external_payment_id === p.id,
-  );
-  const sale = data.sales.find(
-    (s) =>
-      s.id === saved?.sale_id ||
-      (!!p.checkout_session_id && s.external_sale_id === p.checkout_session_id),
-  );
-  if (sale)
-    return {
-      value: normalizeStructure(sale.payment_type),
-      source: "Saved agreement",
-    };
   const contact = matchedContact(data, p);
   const crm =
     contact &&

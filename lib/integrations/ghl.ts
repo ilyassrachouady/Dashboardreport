@@ -76,7 +76,7 @@ export function adaptGhlContact(
     touches,
   });
 }
-export async function fetchGhlContacts() {
+export async function fetchGhlContacts(customFieldId?: string) {
   if (!process.env.GHL_API_KEY || !process.env.GHL_LOCATION_ID)
     throw new Error("Configure GHL server credentials");
   const results: unknown[] = [];
@@ -95,9 +95,20 @@ export async function fetchGhlContacts() {
         body: JSON.stringify({
           locationId: process.env.GHL_LOCATION_ID,
           pageLimit: 100,
+          ...(customFieldId
+            ? {
+                filters: [
+                  {
+                    field: `customFields.${customFieldId}`,
+                    operator: "exists",
+                  },
+                ],
+              }
+            : {}),
           ...(cursor ? { searchAfter: cursor } : {}),
         }),
         signal: AbortSignal.timeout(20000),
+        cache: "no-store",
       },
     );
     if (!response.ok)
@@ -128,6 +139,7 @@ export async function fetchGhlFieldMap() {
         Version: "v3",
       },
       signal: AbortSignal.timeout(15000),
+      cache: "no-store",
     },
   );
   if (!r.ok) throw new Error("GHL custom fields cannot be read");
@@ -148,6 +160,11 @@ export async function fetchGhlFieldMap() {
     "application_submitted",
     "appointment_booked_date",
     "payment_structure",
+    "cash_collected",
+    "attendance",
+    "call_outcome",
+    "closer",
+    "agreed_total_investment",
   ]) {
     const field = fields.find(
       (f) =>

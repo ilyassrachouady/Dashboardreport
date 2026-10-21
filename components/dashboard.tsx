@@ -1,6 +1,7 @@
 "use client";
 import { WhopPaymentHistory } from "./whop-payment-history";
 import { WhopBalance } from "./whop-balance";
+import { crmCloserCash } from "../lib/crm-cash";
 import { useLivePayments } from "./use-live-payments";
 import { matchedContact, reportingPayments } from "../lib/payment-history";
 import { RevenueTrend } from "./revenue-trend";
@@ -544,6 +545,7 @@ export default function Dashboard({
     attrDim,
     tab === "Trakyo" ? "trakyo" : tab === "UTM" ? "utm" : undefined,
   );
+  const crmCashSummary=crmCloserCash(data);
   const salesRows = m.saleRows.map((s) => {
     const c = data.contacts.find((c) => c.id === s.contact_id)!;
     const call = data.calls.find((c) => c.id === s.sales_call_id);
@@ -562,6 +564,7 @@ export default function Dashboard({
       contract: s.contract_value,
       initial: payments[0]?.amount || 0,
       cash: payments.reduce((sum, p) => sum + p.amount, 0),
+      crmCash:crmCashSummary.entries.find(e=>e.contactId===c.id&&e.callId===call?.id)?.cash??null,
       firstPayment: payments[0] ? shortDate(payments[0].paid_at) : "Pending",
       source: dimensions(data, c.id, filters).source,
       trakyo: touchFor(data, c.id, filters.model, "trakyo")?.source || "—",
@@ -1198,6 +1201,7 @@ export default function Dashboard({
                       { key: "structure", label: "Plan" },
                       { key: "contract", label: "Agreed investment" },
                       { key: "initial", label: "Initial payment" },
+                      { key: "crmCash", label: "CRM-reported cash (latest call)" },
                       { key: "cash", label: "Matched USD receipts" },
                       { key: "firstPayment", label: "First payment" },
                       { key: "source", label: "UTM source" },
@@ -1621,7 +1625,7 @@ export default function Dashboard({
                 <strong>{usd(metrics(data, [lead]).contract)}</strong>
               </span>
               <span>
-                Cash collected<strong>{usd(metrics(data, [lead]).cash)}</strong>
+                Whop-matched receipts<strong>{usd(metrics(data, [lead]).cash)}</strong>
               </span>
             </div>
             <h3>Identity</h3>

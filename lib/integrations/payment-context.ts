@@ -2,41 +2,105 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
 import { fetchGhlContacts, fetchGhlFieldMap } from "./ghl";
+import { crmCashCents } from "../crm-cash";
+import type { Dataset } from "../model";
 
 // Current contact-level classification; never presented as historical agreement data.
-export const fetchCrmPaymentStructures = unstable_cache(
-  async (location: string) => {
-    if (location !== process.env.GHL_LOCATION_ID)
-      throw new Error("GHL location mismatch");
-    const [contacts, fields] = await Promise.all([
-      fetchGhlContacts(),
-      fetchGhlFieldMap(),
-    ]);
-    if (!fields.payment_structure)
-      throw new Error("GHL Payment Structure field is missing");
-    const rows = contacts.flatMap((raw) => {
-      const c = z
-        .object({
-          id: z.string(),
-          locationId: z.string(),
-          customFields: z
-            .array(z.object({ id: z.string(), value: z.unknown() }))
-            .optional(),
-        })
-        .parse(raw);
-      if (c.locationId !== location) throw new Error("GHL location mismatch");
-      const value = c.customFields?.find(
-        (f) => f.id === fields.payment_structure,
-      )?.value;
-      return typeof value === "string" && value.trim()
-        ? [{ ghl_contact_id: c.id, value: value.trim() }]
-        : [];
+export async function fetchCrmPaymentStructures(location: string) {
+  if (location !== process.env.GHL_LOCATION_ID)
+    throw new Error("GHL location mismatch");
+  const fields = await fetchGhlFieldMap();
+  const ids = [
+    ...new Set(
+      [
+        fields.payment_structure,
+        fields.cash_collected,
+        fields.attendance,
+        fields.call_outcome,
+        fields.closer,
+        fields.agreed_total_investment,
+      ].filter(Boolean),
+    ),
+  ];
+  const groups = await Promise.all(ids.map((id) => fetchGhlContacts(id)));
+  const contacts = [
+    ...new Map(
+      groups.flat().map((raw) => {
+        const c = z.object({ id: z.string() }).parse(raw);
+        return [c.id, raw] as const;
+      }),
+    ).values(),
+  ];
+  if (!fields.payment_structure)
+    throw new Error("GHL Payment Structure field is missing");
+  const cashRows: { ghl_contact_id: string; cashCents: number | null }[] = [];
+  const attendanceRows: { ghl_contact_id: string; value: string }[] = [];
+  const snapshots: NonNullable<Dataset["crmCallSnapshots"]> = [];
+  const rows = contacts.flatMap((raw) => {
+    const c = z
+      .object({
+        id: z.string(),
+        locationId: z.string(),
+        customFields: z
+          .array(z.object({ id: z.string(), value: z.unknown() }))
+          .optional(),
+      })
+      .parse(raw);
+    if (c.locationId !== location) throw new Error("GHL location mismatch");
+    const get = (key: string) =>
+      c.customFields?.find((f) => f.id === fields[key])?.value;
+    const text = (key: string) =>
+      typeof get(key) === "string" ? String(get(key)).trim() : "";
+    snapshots.push({
+      ghl_contact_id: c.id,
+      closer: text("closer"),
+      attendance: text("attendance"),
+      outcome: text("call_outcome"),
+      structure: text("payment_structure"),
+      cashCents: crmCashCents(get("cash_collected")),
+      contractCents: crmCashCents(get("agreed_total_investment")),
     });
-    return { rows, fetchedAt: new Date().toISOString() };
-  },
-  ["crm-payment-structure-v1"],
-  { revalidate: 300 },
-);
+    const attendance = c.customFields?.find(
+      (f) => f.id === fields.attendance,
+    )?.value;
+    if (typeof attendance === "string" && attendance.trim())
+      attendanceRows.push({ ghl_contact_id: c.id, value: attendance.trim() });
+    const cash = c.customFields?.find(
+      (f) => f.id === fields.cash_collected,
+    )?.value;
+    if (cash !== undefined && cash !== null && cash !== "")
+      cashRows.push({ ghl_contact_id: c.id, cashCents: crmCashCents(cash) });
+    const value = c.customFields?.find(
+      (f) => f.id === fields.payment_structure,
+    )?.value;
+    return typeof value === "string" && value.trim()
+      ? [{ ghl_contact_id: c.id, value: value.trim() }]
+      : [];
+  });
+  return {
+    rows,
+    snapshots,
+    snapshotError: [
+      "attendance",
+      "call_outcome",
+      "closer",
+      "agreed_total_investment",
+      "cash_collected",
+      "payment_structure",
+    ].some((k) => !fields[k])
+      ? "Some required GHL reporting fields are missing"
+      : undefined,
+    attendanceRows: fields.attendance ? attendanceRows : undefined,
+    attendanceError: fields.attendance
+      ? undefined
+      : "GHL Attendance field is missing",
+    cashRows: fields.cash_collected ? cashRows : undefined,
+    cashError: fields.cash_collected
+      ? undefined
+      : "GHL Cash Collected field is missing",
+    fetchedAt: new Date().toISOString(),
+  };
+}
 
 export const fetchTrakyoTransactions = unstable_cache(
   async () => {

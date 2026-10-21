@@ -2288,3 +2288,32 @@ input,textarea{font:inherit;border-radius:4px;border-color:#dedee4;accent-color:
 @media(max-width:760px){.payment-mix-bars{grid-template-columns:1fr 1fr}.payment-ledger-controls{flex-direction:column}.payment-detail-grid{grid-template-columns:1fr}.payment-ledger-controls input{min-width:0}}
 .payment-provider-total{display:flex;justify-content:space-between;align-items:center;gap:28px;margin:0 24px 20px;padding:19px 22px;background:#fafafa;border:1px solid #e4e4e7;border-radius:5px}.payment-provider-total span{font-size:11px;color:#71717a;display:block}.payment-provider-total strong{font-size:29px;letter-spacing:-1px}.payment-provider-total p{font-size:11px;max-width:460px;line-height:1.6;color:#71717a}@media(max-width:760px){.payment-provider-total{display:block}}
 .whop-balance-main{padding:0 24px 20px;display:flex;align-items:baseline;gap:16px}.whop-balance-main strong{font-size:38px;font-weight:700;letter-spacing:-1.5px;line-height:1.2}.whop-balance-main span{font-size:11px;color:#71717a}@media(max-width:760px){.whop-balance-main{display:block}.whop-balance-main span{display:block;margin-top:8px}}
+
+/* Sales workspace: align four-metric panels instead of reserving a fifth column. */
+.sales-payment-workspace{min-width:0}
+.sales-payment-workspace>.panel,.sales-payment-workspace .payment-mix,.sales-payment-workspace .whop-history,.sales-payment-workspace .whop-balance{border:1px solid #e5e5e9;border-radius:7px;overflow:hidden;margin-bottom:24px;background:#fff}
+.sales-payment-workspace .panel-head{padding:24px 24px 0;gap:20px;align-items:flex-start;margin-bottom:0}
+.sales-payment-workspace .panel-head h2{font-size:16px;line-height:1.4;font-weight:650;letter-spacing:-.4px}
+.sales-payment-workspace .panel-head p{font-size:12px;line-height:1.65;color:#777781;margin-top:5px;max-width:860px}
+.sales-payment-workspace .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 24px 24px}
+.sales-payment-workspace .sales-acquisition-funnel .kpi-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.sales-payment-workspace .kpi{min-width:0;min-height:134px;padding:19px 20px 17px;border:1px solid #e7e7ec;border-radius:6px;background:#fff;display:flex;flex-direction:column;box-shadow:0 1px 2px #18181b03}
+.sales-payment-workspace .kpi:hover{border-color:#e7e7ec;background:#fff;box-shadow:0 1px 2px #18181b03}
+.sales-payment-workspace .kpi-label{font-size:12px;line-height:1.5;font-weight:500;color:#6b6b75;min-height:18px}
+.sales-payment-workspace .kpi-value{font-size:32px;line-height:1.15;letter-spacing:-1.2px;font-weight:650;margin-top:13px;color:#18181b;font-variant-numeric:tabular-nums}
+.sales-payment-workspace .kpi-detail{font-size:11px;line-height:1.5;margin-top:9px;color:#85858f}
+.sales-payment-workspace .revenue-trend-note{font-size:11px;line-height:1.65;padding:14px 24px;margin:0;border-top:1px solid #f0f0f3;background:#fdfdfd;color:#85858f}
+.sales-payment-workspace table th{background:#fafafb;font-weight:550;color:#777781;font-size:10px;letter-spacing:.03em;padding-top:12px;padding-bottom:12px}
+.sales-payment-workspace table td{padding-top:15px;padding-bottom:15px;font-size:12px;border-color:#f0f0f3}
+.sales-payment-workspace .payment-provider-total{margin:22px 24px 0;background:#fafafb;border-color:#ededf1;border-radius:6px;padding:20px}
+.sales-payment-workspace .payment-provider-total strong{font-size:30px;font-weight:650;margin-top:5px;display:block}
+.sales-payment-workspace .payment-provider-total p{max-width:420px}
+.sales-payment-workspace .payment-mix-bars{padding-top:0;padding-bottom:24px;gap:24px}
+.sales-payment-workspace .payment-ledger-controls{background:#fff;padding:18px 24px;border-top:1px solid #ededf1;align-items:center}
+.sales-payment-workspace .payment-ledger-controls input{min-height:38px;background:#fafafb;border-color:#e7e7ec;font-size:12px}
+.sales-payment-workspace .whop-balance-main{padding-top:20px;padding-bottom:24px}
+.sales-payment-workspace .whop-balance-main strong{font-size:40px;font-weight:650}
+@media(max-width:1150px){.sales-payment-workspace .kpi{padding:17px 15px}.sales-payment-workspace .kpi-value{font-size:28px}.sales-payment-workspace .sales-acquisition-funnel .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.sales-payment-workspace .kpi-grid,.sales-payment-workspace .sales-acquisition-funnel .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sales-payment-workspace .panel-head{flex-wrap:wrap}}
+@media(max-width:550px){.sales-payment-workspace .panel-head{padding:20px 16px 0}.sales-payment-workspace .kpi-grid{margin:18px 16px;gap:9px}.sales-payment-workspace .kpi{min-height:130px;padding:15px 12px}.sales-payment-workspace .kpi-value{font-size:26px}.sales-payment-workspace .kpi-label{font-size:11px}.sales-payment-workspace .kpi-detail{font-size:10px}.sales-payment-workspace .payment-provider-total{margin:18px 16px 0}.sales-payment-workspace .revenue-trend-note{padding:12px 16px}}
+.sales-payment-workspace .crm-attendance .kpi[aria-pressed="true"]{border-color:#ffaf9d;background:#fff8f5}.crm-attendance .table-scroll{max-height:380px;overflow:auto}.crm-attendance thead th{position:sticky;top:0;z-index:1}.crm-attendance a{color:#e04e35;font-size:11px}

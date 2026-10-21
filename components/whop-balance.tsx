@@ -17,7 +17,7 @@ export function WhopBalance({ data }: { data: Dataset }) {
           </p>
         </div>
         <span className="input-state">
-          {data.whopBalanceError ? "Refresh failed" : "30-second refresh"}
+          {data.whopBalanceError ? "Refresh failed" : "15-second refresh"}
         </span>
       </div>
       <div className="whop-balance-main">

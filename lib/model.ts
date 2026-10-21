@@ -138,6 +138,20 @@ export interface Dataset {
   crmPaymentStructures?: { ghl_contact_id: string; value: string }[];
   crmStructuresFetchedAt?: string;
   crmStructuresError?: string;
+  crmCash?: { ghl_contact_id: string; cashCents: number | null }[];
+  crmCashError?: string;
+  crmAttendance?: { ghl_contact_id: string; value: string }[];
+  crmAttendanceError?: string;
+  crmCallSnapshots?: {
+    ghl_contact_id: string;
+    closer: string;
+    attendance: string;
+    outcome: string;
+    structure: string;
+    cashCents: number | null;
+    contractCents: number | null;
+  }[];
+  crmSnapshotError?: string;
   whopFetchedAt?: string;
   trakyoTransactions?: {
     id: string;

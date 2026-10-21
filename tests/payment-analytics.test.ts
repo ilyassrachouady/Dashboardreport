@@ -69,9 +69,9 @@ test("contact counts deduplicate contacts; transaction mix excludes unknown only
   ];
   const m = paymentAnalytics(d, "USD");
   assert.equal(m.structures[0].contacts, 1);
-  assert.equal(m.pifRate, 0.5);
-  assert.equal(m.structures[3].transactions, 1);
-  assert.equal(paymentStructure(d, d.whopPayments[1]).value, "Financing");
+  assert.equal(m.pifRate, 1);
+  assert.equal(m.structures[3].transactions, 2);
+  assert.equal(paymentStructure(d, d.whopPayments[1]).value, "Unknown");
 });
 test("same customer does not mean same order; names and products do not establish identity", () => {
   const d = emptyDataset(),

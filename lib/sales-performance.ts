@@ -1,5 +1,6 @@
 import type { Dataset, Payment, Sale } from "./model";
 import { reportingPayments } from "./payment-history";
+import { crmCloserCash } from "./crm-cash";
 
 export type CloserPerformance = {
   closer: string;
@@ -12,6 +13,9 @@ export type CloserPerformance = {
   contract: number;
   cash: number;
   cashPerAttendedCall: number | null;
+  crmCash: number | null;
+  crmCashContacts: number;
+  crmCashPerAttendedCall: number | null;
 };
 
 export function isPifPaymentType(value: string) {
@@ -36,16 +40,14 @@ function successfulSalePayments(payments: Payment[], saleId: string) {
 export function isVerifiedPifSale(sale: Sale, payments: Payment[]) {
   if (!isPifPaymentType(sale.payment_type)) return false;
   const receipts = successfulSalePayments(payments, sale.id);
-  return (
-    receipts.length === 1 &&
-    receipts[0].amount >= sale.contract_value
-  );
+  return receipts.length === 1 && receipts[0].amount >= sale.contract_value;
 }
 
 const ratio = (numerator: number, denominator: number) =>
   denominator ? numerator / denominator : null;
 
 export function salesPerformance(data: Dataset) {
+  const crm = crmCloserCash(data);
   const payments = reportingPayments(data);
   const successfulLinkedPayments = payments.filter(
     (payment) => payment.status === "succeeded" && Boolean(payment.sale_id),
@@ -62,9 +64,7 @@ export function salesPerformance(data: Dataset) {
   );
 
   const closerNames = [
-    ...new Set(
-      data.calls.map((call) => call.closer.trim() || "Unassigned"),
-    ),
+    ...new Set(data.calls.map((call) => call.closer.trim() || "Unassigned")),
   ];
 
   const closers: CloserPerformance[] = closerNames
@@ -76,12 +76,12 @@ export function salesPerformance(data: Dataset) {
       const attended = calls.filter(
         (call) => call.attendance === "attended",
       ).length;
-      const sales = data.sales.filter(
-        (sale) => Boolean(sale.sales_call_id && callIds.has(sale.sales_call_id)),
+      const sales = data.sales.filter((sale) =>
+        Boolean(sale.sales_call_id && callIds.has(sale.sales_call_id)),
       );
       const saleIds = new Set(sales.map((sale) => sale.id));
-      const receipts = successfulLinkedPayments.filter(
-        (payment) => Boolean(payment.sale_id && saleIds.has(payment.sale_id)),
+      const receipts = successfulLinkedPayments.filter((payment) =>
+        Boolean(payment.sale_id && saleIds.has(payment.sale_id)),
       );
       const closerCash = receipts.reduce(
         (sum, payment) => sum + payment.amount,
@@ -90,6 +90,10 @@ export function salesPerformance(data: Dataset) {
       const closerPif = sales.filter((sale) =>
         isVerifiedPifSale(sale, receipts),
       ).length;
+      const crmEntries = crm.entries.filter((e) => e.closer === closer);
+      const crmCash = crmEntries.length
+        ? crmEntries.reduce((s, e) => s + e.cash, 0)
+        : null;
 
       return {
         closer,
@@ -101,6 +105,10 @@ export function salesPerformance(data: Dataset) {
         pifRate: ratio(closerPif, sales.length),
         contract: sales.reduce((sum, sale) => sum + sale.contract_value, 0),
         cash: closerCash,
+        crmCash,
+        crmCashContacts: crmEntries.length,
+        crmCashPerAttendedCall:
+          crmCash === null ? null : ratio(crmCash, attended),
         cashPerAttendedCall: ratio(closerCash, attended),
       };
     })
@@ -113,6 +121,10 @@ export function salesPerformance(data: Dataset) {
     verifiedPif,
     pifRate: ratio(verifiedPif, data.sales.length),
     cash,
+    crmCash: crm.total,
+    crmCashContacts: crm.contacts,
+    crmCashPerAttendedCall:
+      crm.total === null ? null : ratio(crm.total, attendedCalls.length),
     cashPerAttendedCall: ratio(cash, attendedCalls.length),
     closers,
   };

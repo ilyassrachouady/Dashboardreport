@@ -1,124 +1,132 @@
 "use client";
 import type { Dataset } from "../lib/model";
-import { salesPerformance } from "../lib/sales-performance";
+import { crmPerformance } from "../lib/crm-performance";
 import { PaymentWorkspace } from "./payment-workspace";
 import { AcquisitionFunnel } from "./acquisition-funnel";
-
-function usd(cents: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
-function percent(value: number | null) {
-  return value === null ? "—" : `${(value * 100).toFixed(1)}%`;
-}
-
+import { CrmAttendance } from "./crm-attendance";
+const usd = (cents: number | null) =>
+  cents === null
+    ? "—"
+    : new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(cents / 100);
+const percent = (value: number | null) =>
+  value === null ? "—" : `${(value * 100).toFixed(1)}%`;
 export function WhopPaymentHistory({ data }: { data: Dataset }) {
-  const performance = salesPerformance(data);
-
+  const p = crmPerformance(data),
+    available =
+      data.crmCallSnapshots !== undefined &&
+      !data.crmStructuresError &&
+      !data.crmSnapshotError;
   return (
-    <>
+    <div className="sales-payment-workspace">
       <section className="panel">
         <div className="panel-head">
           <div>
-            <h2>Closer & payment performance</h2>
+            <h2>Closer & payment performance · GHL</h2>
             <p>
-              Verified Payment Desk call, agreement and receipt data. PIF counts
-              only a PIF agreement with one successful payment covering the full
-              contract value.
+              Current GHL contact fields only: Attendance, Call Outcome, Closer,
+              Payment Structure, Agreed Total Investment and Cash Collected.
             </p>
           </div>
         </div>
         <div className="kpi-grid">
           <div className="kpi">
-            <div className="kpi-label">Attended sales calls</div>
-            <div className="kpi-value">
-              {performance.attended.toLocaleString()}
-            </div>
-            <div className="kpi-detail">Recorded Payment Desk calls</div>
+            <div className="kpi-label">Attended contacts</div>
+            <div className="kpi-value">{available ? p.attended : "—"}</div>
+            <div className="kpi-detail">GHL Attendance = Attended</div>
           </div>
           <div className="kpi">
-            <div className="kpi-label">Recorded agreements</div>
-            <div className="kpi-value">
-              {performance.sales.toLocaleString()}
-            </div>
-            <div className="kpi-detail">Closed-sale records</div>
+            <div className="kpi-label">Sold contacts</div>
+            <div className="kpi-value">{available ? p.sold : "—"}</div>
+            <div className="kpi-detail">GHL Call Outcome = Sold</div>
           </div>
           <div className="kpi">
-            <div className="kpi-label">Verified PIF rate</div>
-            <div className="kpi-value">{percent(performance.pifRate)}</div>
-            <div className="kpi-detail">
-              {performance.verifiedPif} verified PIF / {performance.sales}{" "}
-              agreements
-            </div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Cash per attended call</div>
+            <div className="kpi-label">PIF share · CRM</div>
             <div className="kpi-value">
-              {performance.cashPerAttendedCall === null
-                ? "—"
-                : usd(performance.cashPerAttendedCall)}
+              {available ? percent(p.pifRate) : "—"}
             </div>
             <div className="kpi-detail">
-              Sale-linked successful USD receipts
+              {p.pif} PIF / {p.classified} contacts with a recognised Payment
+              Structure
+            </div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">CRM cash per attended contact</div>
+            <div className="kpi-value">
+              {available ? usd(p.cashPerAttended) : "—"}
+            </div>
+            <div className="kpi-detail">
+              GHL-reported cash / attended contacts
             </div>
           </div>
         </div>
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Closer</th>
-                <th>Attended calls</th>
-                <th>Sales</th>
-                <th>Close rate</th>
-                <th>Verified PIF</th>
-                <th>PIF rate</th>
-                <th>Contract value</th>
-                <th>Cash collected</th>
-                <th>Cash / attended call</th>
-              </tr>
-            </thead>
-            <tbody>
-              {performance.closers.map((closer) => (
-                <tr key={closer.closer}>
-                  <td>{closer.closer}</td>
-                  <td>{closer.attended}</td>
-                  <td>{closer.sales}</td>
-                  <td>{percent(closer.closeRate)}</td>
-                  <td>{closer.verifiedPif}</td>
-                  <td>{percent(closer.pifRate)}</td>
-                  <td>{usd(closer.contract)}</td>
-                  <td>{usd(closer.cash)}</td>
-                  <td>
-                    {closer.cashPerAttendedCall === null
-                      ? "—"
-                      : usd(closer.cashPerAttendedCall)}
-                  </td>
+        {available ? (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>GHL closer</th>
+                  <th>Attended contacts</th>
+                  <th>Sold contacts</th>
+                  <th>Close rate</th>
+                  <th>PIF</th>
+                  <th>Manual plans</th>
+                  <th>Financing</th>
+                  <th>PIF share</th>
+                  <th>Missing plan on sold contacts</th>
+                  <th>Agreed investment</th>
+                  <th>CRM-reported cash</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!performance.closers.length && (
-          <div className="revenue-trend-empty">
-            No recorded closer activity yet.
+              </thead>
+              <tbody>
+                {p.closers.map((c) => (
+                  <tr key={c.closer}>
+                    <td>{c.closer}</td>
+                    <td>{c.attended}</td>
+                    <td>{c.sold}</td>
+                    <td>{percent(c.closeRate)}</td>
+                    <td>{c.pif}</td>
+                    <td>{c.manual}</td>
+                    <td>{c.financing}</td>
+                    <td>{percent(c.pifRate)}</td>
+                    <td>{c.missingPlans}</td>
+                    <td>{usd(c.contract)}</td>
+                    <td>{usd(c.cash)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        ) : (
+          <p className="error-banner">
+            {data.crmSnapshotError ||
+              data.crmStructuresError ||
+              "GHL reporting fields have not been loaded."}
+          </p>
         )}
         <p className="revenue-trend-note">
-          Closer metrics use only agreements linked to recorded calls and
-          successful sale-linked USD receipts. Current Payment Desk history is
-          incomplete and includes test activity, so this is operational
-          reporting, not a compensation statement.
+          Each contact counts once, under the Closer field in GHL; a missing
+          closer stays Unassigned. PIF share = PIF / (PIF + Manual Payment Plan
+          + Financing). Missing or unrecognised structures are excluded, not
+          guessed. Close rate = Sold-and-Attended contacts / Attended contacts.
+          Current contact snapshots are independent of report date/webinar
+          filters and do not represent historical call counts. Whop receipts do
+          not determine any CRM classification.
         </p>
+        {available && p.missingPlans > 0 && (
+          <p className="revenue-trend-note">
+            {p.missingPlans} sold contacts have no recognised Payment Structure
+            in GHL. Fill that field to include them in the PIF/manual/financing
+            mix.
+          </p>
+        )}
       </section>
-
+      <CrmAttendance data={data} />
       <AcquisitionFunnel data={data} />
-
       <PaymentWorkspace data={data} />
-    </>
+    </div>
   );
 }
