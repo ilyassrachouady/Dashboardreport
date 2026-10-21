@@ -10,6 +10,7 @@ import {
   sameOrder,
 } from "../lib/payment-analytics";
 import { DateControl, SelectControl } from "./form-controls";
+import { WhopBalance } from "./whop-balance";
 
 const money = (n: number, currency: string, decimals = 2) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
@@ -79,6 +80,7 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
   const usdGross = converted.reduce((s, p) => s + (p.usd_amount || 0), 0);
   return (
     <>
+      <WhopBalance data={data} />
       <section className="panel payment-mix">
         <div className="panel-head">
           <div>
@@ -136,7 +138,7 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
           <div>
             <h2>Whop transactions & volume</h2>
             <p>
-              Company-wide payment history · refreshes every 60 seconds while
+              Company-wide payment history · refreshes every 30 seconds while
               this dashboard is visible.
             </p>
           </div>

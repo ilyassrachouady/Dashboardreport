@@ -122,6 +122,19 @@ export interface SyncRun {
   error: string | null;
 }
 export interface Dataset {
+  whopBalance?: {
+    totalUsd: string;
+    fetchedAt: string;
+    currencies: {
+      currency: string;
+      balance: string;
+      valueUsd: string | null;
+      available: string;
+      pending: string;
+      reserve: string;
+    }[];
+  };
+  whopBalanceError?: string;
   crmPaymentStructures?: { ghl_contact_id: string; value: string }[];
   crmStructuresFetchedAt?: string;
   crmStructuresError?: string;

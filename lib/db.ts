@@ -1,5 +1,6 @@
 import "server-only";
 import { fetchWhopHistory } from "./integrations/whop-history";
+import { fetchWhopBalance } from "./integrations/whop-balance";
 import {
   fetchCrmPaymentStructures,
   fetchTrakyoTransactions,
@@ -69,6 +70,14 @@ export async function loadDataset(): Promise<{
     );
     Object.assign(data, Object.fromEntries(loaded));
     await Promise.all([
+      (async () => {
+        try {
+          data.whopBalance = await fetchWhopBalance();
+        } catch (e) {
+          data.whopBalanceError =
+            e instanceof Error ? e.message : "Whop balance unavailable";
+        }
+      })(),
       (async () => {
         try {
           data.whopPayments = await fetchWhopHistory();

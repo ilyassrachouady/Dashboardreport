@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isDemo } from "../../../../lib/db";
 import { fetchWhopHistory } from "../../../../lib/integrations/whop-history";
+import { fetchWhopBalance } from "../../../../lib/integrations/whop-balance";
 import {
   fetchCrmPaymentStructures,
   fetchTrakyoTransactions,
@@ -16,8 +17,13 @@ export async function GET() {
       { status: 409 },
     );
   try {
-    const [payments, crm, trakyo] = await Promise.all([
-      fetchWhopHistory(),
+    const [payments, crm, trakyo, balance] = await Promise.all([
+      fetchWhopHistory()
+        .then((value) => ({ value, error: null as string | null }))
+        .catch((e) => ({
+          value: undefined,
+          error: e instanceof Error ? e.message : "Whop payments unavailable",
+        })),
       fetchCrmPaymentStructures(process.env.GHL_LOCATION_ID || "")
         .then((value) => ({ value, error: undefined as string | undefined }))
         .catch((e) => ({
@@ -30,11 +36,20 @@ export async function GET() {
           value: undefined,
           error: e instanceof Error ? e.message : "Trakyo unavailable",
         })),
+      fetchWhopBalance()
+        .then((value) => ({ value, error: null as string | null }))
+        .catch((e) => ({
+          value: undefined,
+          error: e instanceof Error ? e.message : "Whop balance unavailable",
+        })),
     ]);
     return NextResponse.json(
       {
-        whopPayments: payments,
-        whopFetchedAt: new Date().toISOString(),
+        whopPayments: payments.value,
+        whopHistoryError: payments.error,
+        whopBalance: balance.value,
+        whopBalanceError: balance.error,
+        whopFetchedAt: payments.value ? new Date().toISOString() : undefined,
         crmPaymentStructures: crm.value?.rows,
         crmStructuresFetchedAt: crm.value?.fetchedAt,
         crmStructuresError: crm.error,

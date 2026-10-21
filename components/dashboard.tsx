@@ -1,5 +1,6 @@
 "use client";
 import { WhopPaymentHistory } from "./whop-payment-history";
+import { WhopBalance } from "./whop-balance";
 import { useLivePayments } from "./use-live-payments";
 import { matchedContact, reportingPayments } from "../lib/payment-history";
 import { RevenueTrend } from "./revenue-trend";
@@ -883,6 +884,7 @@ export default function Dashboard({
           )}
           {view === "Overview" && (
             <div className="executive-overview">
+              <WhopBalance data={data} />
               <div className="executive-status">
                 <div>
                   <span className="status-dot" />

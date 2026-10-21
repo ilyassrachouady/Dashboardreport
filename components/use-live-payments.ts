@@ -9,15 +9,18 @@ export function useLivePayments(initial: Dataset, demo: boolean) {
   useEffect(() => {
     if (demo) return;
     let disposed = false,
+      inFlight = false,
       controller: AbortController | null = null,
       timer: ReturnType<typeof setTimeout>;
     const refresh = async () => {
-      if (disposed) return;
+      if (disposed || inFlight) return;
+      clearTimeout(timer);
       if (document.visibilityState !== "visible") {
-        timer = setTimeout(refresh, 60000);
+        timer = setTimeout(refresh, 30000);
         return;
       }
       controller = new AbortController();
+      inFlight = true;
       setRefreshing(true);
       try {
         const r = await fetch("/api/payments/live", {
@@ -29,25 +32,36 @@ export function useLivePayments(initial: Dataset, demo: boolean) {
             "Live payment refresh failed. Showing the last successful snapshot.",
           );
         const payload = await r.json();
-        if (!disposed) setLive({ ...payload, whopHistoryError: undefined });
+        if (!disposed)
+          setLive((previous) => ({
+            ...previous,
+            ...payload,
+          }));
       } catch (e) {
         if (!disposed)
           setLive((previous) => ({
             ...previous,
             whopHistoryError:
               e instanceof Error ? e.message : "Payment refresh failed",
+            whopBalanceError: "Live balance refresh failed",
           }));
       } finally {
+        inFlight = false;
         if (!disposed) {
           setRefreshing(false);
-          timer = setTimeout(refresh, 60000);
+          timer = setTimeout(refresh, 30000);
         }
       }
     };
-    timer = setTimeout(refresh, 60000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    timer = setTimeout(refresh, 30000);
     return () => {
       disposed = true;
       clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
       controller?.abort();
     };
   }, [demo, initial]);
