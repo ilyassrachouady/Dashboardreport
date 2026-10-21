@@ -59,3 +59,16 @@ test("blank plans produce an unknown PIF share, and missing CRM closer never fal
   assert.equal(p.cash, null);
   assert.equal(p.attended, 0);
 });
+
+test("CRM cash sums PIF and initial instalments once without substituting contract values", () => {
+  const d = emptyDataset();
+  const base = { closer: "Brooklyn", attendance: "Attended", outcome: "Sold" };
+  d.crmCallSnapshots = [
+    { ...base, ghl_contact_id: "pif", structure: "Pay in Full (PIF)", cashCents: 199700, contractCents: 199700 },
+    { ...base, ghl_contact_id: "plan", structure: "Manual Payment Plan", cashCents: 80000, contractCents: 240000 },
+  ];
+  const result = crmPerformance(d);
+  assert.equal(result.cash, 279700);
+  assert.equal(result.contract, 439700);
+  assert.equal(result.closers[0].cash, 279700);
+});

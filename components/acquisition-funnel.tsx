@@ -16,9 +16,6 @@ function usd(cents: number) {
   }).format(cents / 100);
 }
 
-function pct(n: number, d: number) {
-  return d ? `${((n / d) * 100).toFixed(1)}%` : "—";
-}
 
 export function AcquisitionFunnel({ data }: { data: Dataset }) {
   const [model, setModel] = useState<"first" | "last">("first");
@@ -87,11 +84,9 @@ export function AcquisitionFunnel({ data }: { data: Dataset }) {
     <section className="panel sales-acquisition-funnel">
       <div className="panel-head">
         <div>
-          <h2>Source → revenue funnel</h2>
+          <h2>Activity by acquisition source</h2>
           <p>
-            End-to-end attribution from webinar registration through booked
-            call, attended call, recorded sale and verified sale-linked USD
-            receipts.
+            Imported registration, appointment and Payment Desk records alongside current GHL Cash Collected. These are separate activity totals, not one conversion cohort.
           </p>
         </div>
         <SelectControl
@@ -116,21 +111,21 @@ export function AcquisitionFunnel({ data }: { data: Dataset }) {
           <div className="kpi-label">Booked calls</div>
           <div className="kpi-value">{totals.booked.toLocaleString()}</div>
           <div className="kpi-detail">
-            {pct(totals.booked, totals.registrations)} of registrations
+            Calendar appointment records
           </div>
         </div>
         <div className="kpi">
           <div className="kpi-label">Attended calls</div>
           <div className="kpi-value">{totals.attended.toLocaleString()}</div>
           <div className="kpi-detail">
-            {pct(totals.attended, totals.booked)} of booked calls
+            Payment Desk records · incomplete history
           </div>
         </div>
         <div className="kpi">
           <div className="kpi-label">Recorded sales</div>
           <div className="kpi-value">{totals.sales.toLocaleString()}</div>
           <div className="kpi-detail">
-            {pct(totals.sales, totals.attended)} of attended calls
+            Agreements linked to recorded attended calls
           </div>
         </div>
         <div className="kpi">
@@ -153,9 +148,6 @@ export function AcquisitionFunnel({ data }: { data: Dataset }) {
               <th>Booked</th>
               <th>Attended</th>
               <th>Sales</th>
-              <th>Reg → booked</th>
-              <th>Booked → attended</th>
-              <th>Attended → sale</th>
               <th>CRM-reported cash</th>
             </tr>
           </thead>
@@ -169,9 +161,6 @@ export function AcquisitionFunnel({ data }: { data: Dataset }) {
                 <td>{row.booked}</td>
                 <td>{row.attended}</td>
                 <td>{row.sales}</td>
-                <td>{pct(row.booked, row.registrations)}</td>
-                <td>{pct(row.attended, row.booked)}</td>
-                <td>{pct(row.sales, row.attended)}</td>
                 <td>{row.cash === null ? "—" : usd(row.cash)}</td>
               </tr>
             ))}
@@ -188,7 +177,7 @@ export function AcquisitionFunnel({ data }: { data: Dataset }) {
         normalized source; it is not a historical Whop receipt total. A sale
         only enters this funnel when it is linked to an attended recorded sales
         call, so incomplete Payment Desk call history can understate conversion
-        rates.
+        counts. Conversion percentages are omitted because these records do not establish a shared session or time cohort.
       </p>
     </section>
   );

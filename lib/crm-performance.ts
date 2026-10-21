@@ -48,8 +48,6 @@ export function crmPerformance(data: Dataset) {
       contract: contracts.length
         ? contracts.reduce((s, r) => s + r.contractCents!, 0)
         : null,
-      cashPerAttended:
-        cash !== null && attended.length ? cash / attended.length : null,
     };
   };
   const closers = [...new Set(rows.map((r) => r.closer || "Unassigned"))].map(

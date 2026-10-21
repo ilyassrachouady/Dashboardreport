@@ -66,7 +66,7 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
     setSelected(null);
     returnFocus.current?.focus();
   };
-  const totalContacts = analytics.structures.reduce(
+  const totalContacts = analytics.structures.slice(0, 3).reduce(
     (s, v) => s + v.contacts,
     0,
   );
@@ -104,7 +104,7 @@ export function PaymentWorkspace({ data }: { data: Dataset }) {
                 <div className="kpi-detail">
                   contacts ·{" "}
                   {pct(totalContacts ? s.contacts / totalContacts : null)} of
-                  contacts with a populated structure
+                  contacts with a recognised structure
                 </div>
               </div>
             ))}

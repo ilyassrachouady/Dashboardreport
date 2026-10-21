@@ -10,7 +10,7 @@ const usd = (cents: number | null) =>
     : new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
-        maximumFractionDigits: 0,
+        maximumFractionDigits: 2,
       }).format(cents / 100);
 const percent = (value: number | null) =>
   value === null ? "—" : `${(value * 100).toFixed(1)}%`;
@@ -54,12 +54,12 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
             </div>
           </div>
           <div className="kpi">
-            <div className="kpi-label">CRM cash per attended contact</div>
+            <div className="kpi-label">Cash collected · GHL</div>
             <div className="kpi-value">
-              {available ? usd(p.cashPerAttended) : "—"}
+              {available ? usd(p.cash) : "—"}
             </div>
             <div className="kpi-detail">
-              GHL-reported cash / attended contacts
+              Sum of GHL Cash Collected · includes first instalments
             </div>
           </div>
         </div>
@@ -112,7 +112,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
           closer stays Unassigned. PIF share = PIF / (PIF + Manual Payment Plan
           + Financing). Missing or unrecognised structures are excluded, not
           guessed. Close rate = Sold-and-Attended contacts / Attended contacts.
-          Current contact snapshots are independent of report date/webinar
+          Cash is the amount entered in GHL Cash Collected, including first payments on plans; it is not the full agreed investment or a separate verified receipt total. Initial payments are not added a second time. Current contact snapshots are independent of report date/webinar
           filters and do not represent historical call counts. Whop receipts do
           not determine any CRM classification.
         </p>

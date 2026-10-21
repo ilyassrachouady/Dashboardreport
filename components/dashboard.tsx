@@ -1203,7 +1203,7 @@ export default function Dashboard({
                       { key: "initial", label: "Initial payment" },
                       { key: "crmCash", label: "CRM-reported cash (latest call)" },
                       { key: "cash", label: "Matched USD receipts" },
-                      { key: "firstPayment", label: "First payment" },
+                      { key: "firstPayment", label: "First matched Whop payment" },
                       { key: "source", label: "UTM source" },
                       { key: "trakyo", label: "Trakyo source" },
                       { key: "webinar", label: "Webinar" },
