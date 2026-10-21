@@ -26,6 +26,22 @@ const payment = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 test("Whop money objects convert exact decimals to minor units and preserve failure/refund states", () => {
+  const converted = adaptWhopPayment(
+    payment({
+      usd_total: money("73.21"),
+      presentment_total: money("65.00", "gbp"),
+    }),
+    "biz",
+  );
+  assert.equal(converted.usd_amount, 7321);
+  assert.deepEqual(converted.presentment, {
+    currency: "GBP",
+    amount: 6500,
+    decimals: 2,
+  });
+  assert.throws(() =>
+    adaptWhopPayment(payment({ usd_total: money("73.21", "cad") }), "biz"),
+  );
   assert.equal(minorAmount(money("1997.01")), 199701);
   assert.throws(() => minorAmount(money("1.005")));
   assert.equal(adaptWhopPayment(payment(), "biz").net, 199700);

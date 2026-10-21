@@ -62,6 +62,15 @@ export interface Call {
   recording_url: string | null;
 }
 export interface WhopPayment {
+  usd_amount?: number | null;
+  presentment?: { currency: string; amount: number; decimals: number } | null;
+  user_id?: string | null;
+  membership_id?: string | null;
+  plan_id?: string | null;
+  product_id?: string | null;
+  payment_method?: string | null;
+  billing_reason?: string | null;
+  financing_installments?: number | null;
   id: string;
   currency: string;
   decimals: number;
@@ -113,6 +122,18 @@ export interface SyncRun {
   error: string | null;
 }
 export interface Dataset {
+  crmPaymentStructures?: { ghl_contact_id: string; value: string }[];
+  crmStructuresFetchedAt?: string;
+  crmStructuresError?: string;
+  whopFetchedAt?: string;
+  trakyoTransactions?: {
+    id: string;
+    lead_id: string | null;
+    reference_number: string | null;
+    transaction_date: string;
+    payment_method: string | null;
+  }[];
+  trakyoTransactionsError?: string;
   whopPayments?: WhopPayment[];
   whopHistoryError?: string;
   webinarCrm?: Record<

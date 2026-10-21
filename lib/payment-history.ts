@@ -8,8 +8,17 @@ export function matchedContact(data: Dataset, p: WhopPayment) {
         (c) => c.email?.toLowerCase() === p.email!.trim().toLowerCase(),
       )
     : undefined;
-  if (ghl && email && ghl.id !== email.id) return undefined;
-  return ghl || email;
+  const tx = (data.trakyoTransactions || []).filter(
+    (t) => t.reference_number === p.id,
+  );
+  const leadIds = [...new Set(tx.map((t) => t.lead_id).filter(Boolean))];
+  const trakyo =
+    leadIds.length === 1
+      ? data.contacts.find((c) => c.trakyo_id === leadIds[0])
+      : undefined;
+  const candidates = [ghl, email, trakyo].filter(Boolean);
+  if (new Set(candidates.map((c) => c!.id)).size > 1) return undefined;
+  return ghl || email || trakyo;
 }
 export function reportingPayments(data: Dataset): Payment[] {
   const payments = new Map(

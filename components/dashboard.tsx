@@ -1,5 +1,6 @@
 "use client";
 import { WhopPaymentHistory } from "./whop-payment-history";
+import { useLivePayments } from "./use-live-payments";
 import { matchedContact, reportingPayments } from "../lib/payment-history";
 import { RevenueTrend } from "./revenue-trend";
 import { SelectControl, DateControl } from "./form-controls";
@@ -303,7 +304,7 @@ export default function Dashboard({
     [normalized, setNormalized] = useState(""),
     [compare, setCompare] = useState<string[]>([]),
     [qualityFilter, setQualityFilter] = useState<string>("");
-  const data = demo ? localData : initial;
+  const { data } = useLivePayments(demo ? localData : initial, demo);
   const activeFilters = {
     ...filters,
     model:

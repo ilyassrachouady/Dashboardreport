@@ -30,11 +30,20 @@ export function adaptWhopPayment(raw: unknown, accountId: string): WhopPayment {
       substatus: z.string(),
       currency: z.string(),
       total: amount,
+      usd_total: amount.nullish(),
+      presentment_total: amount.nullish(),
       refunded_amount: amount.nullish(),
       paid_at: z.string().nullish(),
       created_at: z.string(),
       user: z.object({ id: z.string(), name: z.string().nullish() }).nullish(),
       customer_email: z.string().nullish(),
+      member_id: z.string().nullish(),
+      membership_id: z.string().nullish(),
+      plan_id: z.string().nullish(),
+      product_id: z.string().nullish(),
+      payment_method_type: z.string().nullish(),
+      billing_reason: z.string().nullish(),
+      financing_installments_count: z.number().int().nullish(),
       metadata: z.record(z.string(), z.unknown()).nullish(),
     })
     .parse(raw);
@@ -55,7 +64,31 @@ export function adaptWhopPayment(raw: unknown, accountId: string): WhopPayment {
   if (p.status === "paid" && p.substatus === "succeeded" && !p.paid_at)
     throw new Error("Successful Whop payment is missing paid_at");
   const meta = p.metadata || {};
+  if (
+    p.usd_total &&
+    (p.usd_total.currency !== "usd" || p.usd_total.decimals !== 2)
+  )
+    throw new Error("Invalid Whop USD conversion");
   return {
+    usd_amount: p.usd_total
+      ? minorAmount(p.usd_total)
+      : p.currency === "usd"
+        ? total
+        : null,
+    presentment: p.presentment_total
+      ? {
+          currency: p.presentment_total.currency.toUpperCase(),
+          amount: minorAmount(p.presentment_total),
+          decimals: p.presentment_total.decimals,
+        }
+      : null,
+    user_id: p.user?.id || null,
+    membership_id: p.membership_id || null,
+    plan_id: p.plan_id || null,
+    product_id: p.product_id || null,
+    payment_method: p.payment_method_type || null,
+    billing_reason: p.billing_reason || null,
+    financing_installments: p.financing_installments_count || null,
     id: p.id,
     currency: p.currency.toUpperCase(),
     decimals: p.total.decimals,

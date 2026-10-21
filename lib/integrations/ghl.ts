@@ -147,6 +147,7 @@ export async function fetchGhlFieldMap() {
     "trakyo_content",
     "application_submitted",
     "appointment_booked_date",
+    "payment_structure",
   ]) {
     const field = fields.find(
       (f) =>

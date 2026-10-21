@@ -1,5 +1,9 @@
 import "server-only";
 import { fetchWhopHistory } from "./integrations/whop-history";
+import {
+  fetchCrmPaymentStructures,
+  fetchTrakyoTransactions,
+} from "./integrations/payment-context";
 import { webinarTagMap } from "./integrations/ghl-webinar";
 import { createClient } from "@supabase/supabase-js";
 import { emptyDataset, type Dataset } from "./model";
@@ -64,12 +68,39 @@ export async function loadDataset(): Promise<{
       }),
     );
     Object.assign(data, Object.fromEntries(loaded));
-    try {
-      data.whopPayments = await fetchWhopHistory();
-    } catch (e) {
-      data.whopHistoryError =
-        e instanceof Error ? e.message : "Whop history unavailable";
-    }
+    await Promise.all([
+      (async () => {
+        try {
+          data.whopPayments = await fetchWhopHistory();
+          data.whopFetchedAt = new Date().toISOString();
+        } catch (e) {
+          data.whopHistoryError =
+            e instanceof Error ? e.message : "Whop history unavailable";
+        }
+      })(),
+      (async () => {
+        try {
+          const context = await fetchCrmPaymentStructures(
+            process.env.GHL_LOCATION_ID || "",
+          );
+          data.crmPaymentStructures = context.rows;
+          data.crmStructuresFetchedAt = context.fetchedAt;
+        } catch (e) {
+          data.crmStructuresError =
+            e instanceof Error
+              ? e.message
+              : "CRM payment structures unavailable";
+        }
+      })(),
+      (async () => {
+        try {
+          data.trakyoTransactions = await fetchTrakyoTransactions();
+        } catch (e) {
+          data.trakyoTransactionsError =
+            e instanceof Error ? e.message : "Trakyo transactions unavailable";
+        }
+      })(),
+    ]);
     const cohortMap = webinarTagMap();
     data.webinarCrm = Object.fromEntries(
       data.webinars.flatMap((w) => {
