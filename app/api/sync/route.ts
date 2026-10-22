@@ -1,9 +1,10 @@
+import { sameOrigin } from "../../../lib/same-origin";
 import { NextResponse } from "next/server";
 import { isDemo } from "../../../lib/db";
 import { runSync } from "../../../lib/sync";
 export const maxDuration = 300;
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== new URL(request.url).origin)
+  if (!sameOrigin(request))
     return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   if (isDemo())
     return NextResponse.json({ message: "Demo mode: no external API called." });

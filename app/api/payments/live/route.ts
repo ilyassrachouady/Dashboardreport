@@ -1,3 +1,5 @@
+import { notionWebinars } from "../../../../lib/integrations/notion";
+import { database } from "../../../../lib/db";
 import { NextResponse } from "next/server";
 import { isDemo } from "../../../../lib/db";
 import { fetchWhopHistory } from "../../../../lib/integrations/whop-history";
@@ -17,7 +19,7 @@ export async function GET() {
       { status: 409 },
     );
   try {
-    const [payments, crm, trakyo, balance] = await Promise.all([
+    const [payments, crm, trakyo, balance, sessions] = await Promise.all([
       fetchWhopHistory()
         .then((value) => ({ value, error: null as string | null }))
         .catch((e) => ({
@@ -42,9 +44,15 @@ export async function GET() {
           value: undefined,
           error: e instanceof Error ? e.message : "Whop balance unavailable",
         })),
+      (async () => {
+        const result = await database().from("webinars").select("*");
+        if (result.error) return undefined;
+        return notionWebinars(result.data);
+      })(),
     ]);
     return NextResponse.json(
       {
+        webinars: sessions,
         whopPayments: payments.value,
         whopHistoryError: payments.error,
         whopBalance: balance.value,

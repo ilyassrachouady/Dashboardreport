@@ -1,4 +1,5 @@
 import "server-only";
+import { notionSessionMap, syncNotionRegistrantCounts } from "./integrations/notion";
 import { fetchWhopHistory } from "./integrations/whop-history";
 import { syncBookings } from "./sync-bookings";
 import { syncWebinarCohorts } from "./sync-webinar-cohort";
@@ -7,6 +8,9 @@ import { adaptTrakyoLead, fetchTrakyoLeads } from "./integrations/trakyo";
 import {
   adaptWebinarRegistrant,
   fetchWebinarRegistrants,
+  discoverWebinars,
+  scheduledSessionRows,
+  reconcileScheduledSession,
 } from "./integrations/webinars";
 import { database } from "./db";
 import {
@@ -56,12 +60,27 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
         }
       }
     } else if (source === "webinars") {
-      const { details, registrants } = await fetchWebinarRegistrants();
-      for (const row of registrants) {
-        try {
-          events.push(adaptWebinarRegistrant(row, details));
-        } catch {
-          failed++;
+      const ids=await discoverWebinars();
+      for(const webinarId of ids){
+        const {details,registrants}=await fetchWebinarRegistrants(webinarId);
+        for(const row of scheduledSessionRows(details,registrants)){
+          // Promote a zero-registration placeholder once its provider event ID
+          // becomes known, preserving the session UUID and its Notion link.
+          const prefix=row.external_id.split(":").slice(0,3).join(":")+":";
+          const existing=await db.from("webinars").select("id,external_id,webinar_date").eq("provider","webinars").like("external_id",`${prefix}%`);
+          if(existing.error)throw Error("Could not read scheduled sessions");
+          const placeholderId=`${prefix}${details.schedules.find(s=>row.external_id.startsWith(`webinarjam:${details.webinar_id}:${s.schedule}:`))?.date}`;
+          const identity=reconcileScheduledSession(row,existing.data,placeholderId);
+          row.external_id=identity.externalId;
+          if(identity.promoteId){
+            const promoted=await db.from("webinars").update({external_id:row.external_id}).eq("id",identity.promoteId);
+            if(promoted.error)throw Error("Could not reconcile the scheduled session");
+          }
+          const saved=await db.from("webinars").upsert(row,{onConflict:"provider,external_id"});
+          if(saved.error)throw Error("Could not save discovered session");
+        }
+        for(const row of registrants){
+          try{events.push(adaptWebinarRegistrant(row,details));}catch{failed++;}
         }
       }
     } else {
@@ -100,6 +119,20 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
     );
     if (ghlContext && !failed)
       await syncBookings(ghlContext.contacts, ghlContext.fields);
+    if (source === "webinars" && !failed) {
+      const sessions=await db.from("webinars").select("*");
+      if(sessions.error)throw new Error("Notion session lookup failed");
+      const externalIds=Object.keys(notionSessionMap(sessions.data));
+      if(externalIds.length){
+        const totals:Record<string,number>={};
+        for(const w of sessions.data.filter(w=>externalIds.includes(w.external_id))){
+          const registrations=await db.from("webinar_registrations").select("id",{count:"exact",head:true}).eq("webinar_id",w.id);
+          if(registrations.error||registrations.count===null)throw new Error("Registration count could not be verified");
+          totals[w.external_id]=registrations.count;
+        }
+        await syncNotionRegistrantCounts(totals,sessions.data);
+      }
+    }
     const status = failed ? "failed" : "succeeded";
     const save = await db
       .from("sync_runs")

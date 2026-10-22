@@ -1,4 +1,7 @@
 "use client";
+import { WebinarConnections } from "./webinar-connections";
+import { WebinarAttendance } from "./webinar-attendance";
+import { WebinarSessionSetup } from "./webinar-session-setup";
 import { SelectControl } from "./form-controls";
 import { ReportVisuals, SessionComparisonChart } from "./report-visuals";
 import { useState, useRef } from "react";
@@ -86,6 +89,9 @@ export function WebinarReports({
   data: Dataset;
   onSource: (source: string, webinar: string) => void;
 }) {
+  const router=useRouter();
+  const [discovering,setDiscovering]=useState(false),[discoveryError,setDiscoveryError]=useState("");
+  async function discover(){setDiscovering(true);setDiscoveryError("");try{const r=await fetch("/api/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source:"webinars"})});const v=await r.json();if(!r.ok)throw Error(v.error||v.message);router.refresh();}catch(e){setDiscoveryError(e instanceof Error?e.message:"Discovery failed");}finally{setDiscovering(false);}}
   const webinars = [...data.webinars].sort((a, b) =>
     b.webinar_date.localeCompare(a.webinar_date),
   );
@@ -101,11 +107,15 @@ export function WebinarReports({
           Sync WebinarJam in Data Sources to bring in your sessions and
           registrants.
         </p>
+        <button className="button primary" disabled={discovering} onClick={()=>void discover()}>{discovering?"Finding webinars…":"Discover webinars"}</button>
+        {discoveryError&&<p role="alert">{discoveryError}</p>}
       </div>
     );
   return (
     <div className="report-workspace">
+      {discoveryError&&<p className="error-banner" role="alert">{discoveryError}</p>}
       <div className="report-toolbar">
+        <button className="button secondary" disabled={discovering} onClick={()=>void discover()}><RefreshCw size={13}/>{discovering?"Finding webinars…":"Refresh webinars"}</button>
         <label>
           <CalendarDays size={16} />
           <span>Session</span>
@@ -433,6 +443,9 @@ export function WebinarPerformance({
           </div>
         </div>
       )}
+      <WebinarConnections key={`connection:${w.id}`} webinar={w} />
+      <WebinarSessionSetup key={w.id} webinar={w} />
+      <WebinarAttendance key={`attendance:${w.id}`} webinarId={w.id} />
       <ReportVisuals data={data} webinar={w} onSource={onSource} />
       <div className="report-metric-heading">
         <h3>Webinar conversion rates</h3>
@@ -707,7 +720,7 @@ export function WebinarPerformance({
                       ? key === "application_count"
                         ? "GHL · tagged cohort"
                         : "GHL · Advisory Call calendar"
-                      : "Session entry"}
+                      : w.notion_managed && (key === "peak_attendees" || key === "pitch_attendees") ? "Notion" : "Session entry"}
                   </td>
                   <td>
                     <span
@@ -723,7 +736,7 @@ export function WebinarPerformance({
                         : (key === "application_count" && crm?.syncedAt) ||
                             (key.includes("booked") && crm?.bookingsSyncedAt)
                           ? "Synced"
-                          : "Entered"}
+                          : w.notion_managed && (key === "peak_attendees" || key === "pitch_attendees") ? "Synced" : "Entered"}
                     </span>
                   </td>
                 </tr>
@@ -803,6 +816,7 @@ export function WebinarPerformance({
                     <input
                       autoFocus={i === 0}
                       disabled={
+                        (Boolean(w.notion_managed) && (key === "peak_attendees" || key === "pitch_attendees")) ||
                         (key === "application_count" && Boolean(crm)) ||
                         (key.includes("booked") &&
                           Boolean(crm?.bookingsSyncedAt))
@@ -811,14 +825,14 @@ export function WebinarPerformance({
                       min="0"
                       max="10000000"
                       step="1"
-                      value={values[key]}
+                      value={w.notion_managed && (key === "peak_attendees" || key === "pitch_attendees") ? (w[key] ?? "") : values[key]}
                       placeholder="Unknown"
                       onChange={(e) =>
                         setValues({ ...values, [key]: e.target.value })
                       }
                     />
                     <small>
-                      {(key === "application_count" && crm) ||
+                      {w.notion_managed && (key === "peak_attendees" || key === "pitch_attendees") ? "Managed in Notion. Edit the session there." : (key === "application_count" && crm) ||
                       (key.includes("booked") && crm?.bookingsSyncedAt)
                         ? "Synced from GHL. Use Sync CRM data to refresh."
                         : help}

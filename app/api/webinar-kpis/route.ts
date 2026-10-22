@@ -1,3 +1,4 @@
+import { notionManaged } from "../../../lib/integrations/notion";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { webinarTagMap } from "../../../lib/integrations/ghl-webinar";
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   const current = await database()
     .from("webinars")
     .select(
-      "external_id,application_count,call_booked_count,applicant_booked_count",
+      "*",
     )
     .eq("id", id)
     .single();
@@ -62,8 +63,12 @@ export async function POST(request: Request) {
       { error: "Unknown webinar session" },
       { status: 404 },
     );
+  if (notionManaged(current.data.external_id,current.data.notion_page_id)) {
+    delete (counts as Partial<typeof counts>).peak_attendees;
+    delete (counts as Partial<typeof counts>).pitch_attendees;
+  }
   // CRM-managed applicants must not be overwritten by a stale manual form.
-  if (webinarTagMap()[current.data.external_id])
+  if (webinarTagMap([current.data])[current.data.external_id])
     counts.application_count = current.data.application_count;
   const bookingSync = await database()
     .from("sync_runs")
@@ -76,7 +81,7 @@ export async function POST(request: Request) {
       { error: "Cannot verify booking sync status" },
       { status: 502 },
     );
-  if (webinarTagMap()[current.data.external_id] && bookingSync.data.length) {
+  if (webinarTagMap([current.data])[current.data.external_id] && bookingSync.data.length) {
     counts.call_booked_count = current.data.call_booked_count;
     counts.applicant_booked_count = current.data.applicant_booked_count;
   }

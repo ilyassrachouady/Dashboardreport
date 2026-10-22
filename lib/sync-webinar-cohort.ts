@@ -6,14 +6,14 @@ export async function syncWebinarCohorts(
   fields: Record<string, string>,
   onlyId?: string,
 ) {
-  const db = database(),
-    map = webinarTagMap();
+  const db = database();
   const results: Array<
     ReturnType<typeof countWebinarCohort> & { webinar_id: string }
   > = [];
-  if (!Object.keys(map).length) return results;
-  const selected = await db.from("webinars").select("id,external_id");
+  const selected = await db.from("webinars").select("*");
   if (selected.error) throw new Error("Unable to read webinar mapping");
+  const map=webinarTagMap(selected.data);
+  if (!Object.keys(map).length) return results;
   for (const w of selected.data) {
     const tag = map[w.external_id];
     if (!tag || (onlyId && w.id !== onlyId)) continue;

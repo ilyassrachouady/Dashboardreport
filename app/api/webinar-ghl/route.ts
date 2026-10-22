@@ -1,3 +1,4 @@
+import { sameOrigin } from "../../../lib/same-origin";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isDemo } from "../../../lib/db";
@@ -9,7 +10,7 @@ import { syncWebinarCohorts } from "../../../lib/sync-webinar-cohort";
 import { syncBookings } from "../../../lib/sync-bookings";
 export const maxDuration = 300;
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== new URL(request.url).origin)
+  if (!sameOrigin(request))
     return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   if (isDemo())
     return NextResponse.json(

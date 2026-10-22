@@ -10,6 +10,21 @@ export interface Contact {
   created_at: string;
 }
 export interface Webinar {
+  notion_page_id?: string | null;
+  ghl_cohort_tag?: string | null;
+  notion_managed?: boolean;
+  notion_updated_at?: string;
+  notion_error?: string | null;
+  event_status?: "unknown" | "planned" | "ready" | "completed" | "cancelled";
+  promotion_type?: "unknown" | "organic" | "paid" | "mixed";
+  presenter_url?: string | null;
+  slides_url?: string | null;
+  replay_url?: string | null;
+  notion_page_url?: string | null;
+  live_booking_url?: string | null;
+  replay_booking_url?: string | null;
+  followup_booking_url?: string | null;
+  operations_updated_at?: string | null;
   id: string;
   external_id: string;
   name: string;

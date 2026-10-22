@@ -1,0 +1,12 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { SelectControl } from "./form-controls";
+import type { Webinar } from "../lib/model";
+type Event={id:string;name:string;date:string|null;url:string};
+export function WebinarConnections({webinar:w}:{webinar:Webinar}){
+ const router=useRouter();const[events,setEvents]=useState<Event[]>([]),[chosen,setChosen]=useState(w.notion_page_id||""),[tag,setTag]=useState(w.ghl_cohort_tag||""),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
+ async function load(){setBusy(true);setMessage("");try{const r=await fetch("/api/webinar-connections",{cache:"no-store"});const v=await r.json();if(!r.ok)throw Error(v.error);setEvents(v.events);if(!v.events.length)setMessage("No events found in the connected Notion database.");}catch(e){setMessage(e instanceof Error?e.message:"Could not load events");}finally{setBusy(false);}}
+ async function save(){setBusy(true);setMessage("");try{const r=await fetch("/api/webinar-connections",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:w.id,notion_page_id:chosen,ghl_cohort_tag:tag})});const v=await r.json();if(!r.ok)throw Error(v.error);setMessage("Session connected");router.refresh();}catch(e){setMessage(e instanceof Error?e.message:"Could not save connection");}finally{setBusy(false);}}
+ return <details className="panel session-setup"><summary><span>{w.notion_managed?"Session connections":"Connect this webinar"}</span><span>Notion event & CRM cohort</span></summary><div className="attendance-import"><div className="session-setup-footer"><button type="button" className="button secondary" disabled={busy} onClick={()=>void load()}>{busy?"Working…":"Load Notion events"}</button></div>{!!events.length&&<><label className="attendance-file-label">Notion event<SelectControl value={chosen} onValueChange={setChosen}><option value="">Select the matching event</option>{events.map(e=><option key={e.id} value={e.id}>{e.date?new Date(e.date).toLocaleString("en-GB"):"Date not set"} · {e.name}</option>)}</SelectControl></label><label className="attendance-file-label">GHL webinar cohort tag (optional)<input className="input" value={tag} maxLength={200} onChange={e=>setTag(e.target.value)} placeholder="Exact session-specific tag in GHL"/></label><div className="session-setup-footer"><button type="button" className="button primary" disabled={!chosen||busy} onClick={()=>void save()}>Connect session</button></div></>}<p role="status">{message}</p></div></details>;
+}

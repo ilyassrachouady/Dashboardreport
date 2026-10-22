@@ -1,4 +1,5 @@
 import "server-only";
+import { notionWebinars } from "./integrations/notion";
 import { fetchWhopHistory } from "./integrations/whop-history";
 import { fetchWhopBalance } from "./integrations/whop-balance";
 import {
@@ -118,7 +119,7 @@ export async function loadDataset(): Promise<{
         }
       })(),
     ]);
-    const cohortMap = webinarTagMap();
+    const cohortMap = webinarTagMap(data.webinars);
     data.webinarCrm = Object.fromEntries(
       data.webinars.flatMap((w) => {
         const tag = cohortMap[w.external_id];
@@ -146,6 +147,7 @@ export async function loadDataset(): Promise<{
         ];
       }),
     );
+    data.webinars = await notionWebinars(data.webinars);
     return { data, demo: false, error: null };
   } catch (e) {
     return {

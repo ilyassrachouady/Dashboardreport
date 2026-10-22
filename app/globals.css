@@ -2363,3 +2363,23 @@ input,textarea{font:inherit;border-radius:4px;border-color:#dedee4;accent-color:
 @media(max-width:600px) {
   .metric-help[open] .metric-help-content {position:fixed;left:50%;right:auto;top:auto;bottom:24px;transform:translateX(-50%);width:320px;max-width:calc(100vw - 32px);box-shadow:0 4px 32px #18181b24;z-index:100;}
 }
+.session-setup { margin:0 0 20px; }
+.session-setup > summary {padding:17px 22px;cursor:pointer;font-weight:600;font-size:13px;}
+.session-setup > summary > span:last-child {font-size:11px;color:#85858f;font-weight:400;margin-left:16px;}
+.session-setup form {border-top:1px solid #eeeef2;padding:22px;}
+.session-setup-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 22px;}
+.session-setup-grid label {display:flex;flex-direction:column;gap:8px;font-size:12px;color:#52525b;min-width:0;}
+.session-link-input {display:flex;align-items:center;border:1px solid #e5e5e9;border-radius:5px;}
+.session-link-input input {width:100%;min-width:0;border:0;padding:11px;background:transparent;font-size:12px;}
+.session-link-input a {padding:10px;color:#eb5339;}
+.session-link-input:focus-within {outline:2px solid #ffb9aa;outline-offset:1px;}
+.session-checklist {margin-top:24px;padding-top:20px;border-top:1px solid #eeeef2;}
+.session-checklist h3 {font-size:12px;margin:0 0 12px;}
+.session-checklist > div {display:flex;gap:18px;align-items:baseline;margin:10px 0;font-size:12px;}
+.session-checklist span {min-width:42px;color:#85858f;}
+.session-checklist p {margin:0;line-height:1.6;}
+.session-setup-footer {display:flex;align-items:center;gap:14px;margin-top:22px;}
+.session-setup-footer [role=status] {font-size:12px;color:#62626c;}
+@media(max-width:650px){.session-setup-grid{grid-template-columns:1fr}.session-setup>summary>span:last-child{display:none}.session-setup form{padding:16px}.session-setup-footer{align-items:flex-start;flex-direction:column}}
+.attendance-import{padding:20px 22px;border-top:1px solid #eeeef2;font-size:12px;line-height:1.6}.attendance-file-label{display:flex;flex-direction:column;gap:9px;margin-top:20px}.attendance-file-label input{padding:12px;border:1px solid #e5e5e9;border-radius:5px;background:#fff}.attendance-import td,.attendance-import th{padding:12px;text-align:left}.attendance-import>.table-scroll{max-height:360px;overflow:auto}
+.notion-session-summary{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 22px;margin-bottom:20px}.notion-session-summary>div{display:flex;flex-direction:column;gap:5px;margin-right:auto}.notion-session-summary strong{font-size:13px}.notion-session-summary span{font-size:11px;color:#85858f}.notion-session-summary nav{display:flex;flex-wrap:wrap;gap:10px 18px;width:100%;font-size:12px;color:#d84c35}.notion-session-summary .error-banner{width:100%;margin:0}

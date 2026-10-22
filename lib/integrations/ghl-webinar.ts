@@ -6,10 +6,11 @@ const cohortContact = z.object({
     .array(z.object({ id: z.string(), value: z.unknown() }))
     .default([]),
 });
-export function webinarTagMap(): Record<string, string> {
+export function webinarTagMap(sessions: Array<{external_id:string;ghl_cohort_tag?:string|null}> = []): Record<string, string> {
   const value = process.env.GHL_WEBINAR_TAG_MAP_JSON;
-  if (!value) return {};
-  return z.record(z.string(), z.string().min(1)).parse(JSON.parse(value));
+  const map=z.record(z.string(), z.string().min(1)).parse(JSON.parse(value||"{}"));
+  for(const w of sessions)if(w.ghl_cohort_tag)map[w.external_id]=w.ghl_cohort_tag;
+  return map;
 }
 export function countWebinarCohort(
   contacts: unknown[],

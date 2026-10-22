@@ -14,7 +14,7 @@ export async function syncBookings(
   const db = database();
   const webinars = await db
     .from("webinars")
-    .select("id,external_id,webinar_date");
+    .select("*");
   if (webinars.error) throw new Error("Cannot load webinar sessions");
   const sessions = webinars.data;
   const start =
@@ -68,7 +68,7 @@ export async function syncBookings(
     stored.push(linked.data);
     identities.set(id, linked.data.id);
   }
-  const map = webinarTagMap();
+  const map = webinarTagMap(sessions);
   const rows = events.map((e) => {
     const contactId = identities.get(e.contactId),
       person = people.get(e.contactId);
