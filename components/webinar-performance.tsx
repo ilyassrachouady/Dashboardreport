@@ -25,6 +25,7 @@ import { defaultFilters } from "../lib/model";
 import { dimensions, csv } from "../lib/reporting";
 import { registrantReview } from "../lib/webinar-reconciliation";
 import { webinarKpis } from "../lib/webinar-kpis";
+import { clientSeries, clientSeriesLabels } from "../lib/session-code";
 const inputs = [
   [
     "peak_attendees",
@@ -58,6 +59,7 @@ function exportReport(data: Dataset, webinars: Webinar[]) {
   const rows = webinars.map((w) => {
     const k = webinarKpis(data, w);
     return {
+      session_code: w.session_code || "",
       webinar: w.name,
       date: w.webinar_date,
       registrants: k.registrants,
@@ -126,6 +128,7 @@ export function WebinarReports({
           >
             {webinars.map((s) => (
               <option key={s.id} value={s.id}>
+                {s.session_code ? `${s.session_code} · ` : ""}
                 {new Date(s.webinar_date).toLocaleDateString("en-GB")} ·{" "}
                 {s.name}
               </option>
@@ -200,6 +203,7 @@ export function WebinarReports({
                             setCompare(false);
                           }}
                         >
+                          {s.session_code ? `${s.session_code} · ` : ""}
                           {s.name}
                           <ArrowUpRight size={13} />
                         </button>
@@ -370,12 +374,46 @@ export function WebinarPerformance({
       setBusy(false);
     }
   }
+  async function changeSeries(value: string) {
+    if ((value !== "TCS" && value !== "QUE") || value === (w.client_series === "QUE" ? "QUE" : "TCS")) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/webinar-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: w.id, client_series: value }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error);
+      router.refresh();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not change the client series");
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <>
       <section className="report-session-header">
         <div>
-          <span className="report-kicker">WEBINAR PERFORMANCE</span>
+          <span className="report-kicker">{w.session_code || "WEBINAR PERFORMANCE"}</span>
           <h2>{w.name}</h2>
+          <label className="session-series">
+            Client
+            <SelectControl
+              aria-label="Client series"
+              disabled={busy}
+              value={w.client_series === "QUE" ? "QUE" : "TCS"}
+              onValueChange={(value) => void changeSeries(value)}
+            >
+              {clientSeries.map((series) => (
+                <option key={series} value={series}>
+                  {series} · {clientSeriesLabels[series]}
+                </option>
+              ))}
+            </SelectControl>
+          </label>
           <p>
             <CalendarDays size={13} />
             {new Date(w.webinar_date).toLocaleString("en-GB", {

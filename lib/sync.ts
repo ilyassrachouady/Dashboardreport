@@ -13,6 +13,7 @@ import {
   reconcileScheduledSession,
 } from "./integrations/webinars";
 import { database } from "./db";
+import { assignMissingSessionCodes } from "./session-code";
 import {
   adaptGhlContact,
   fetchGhlContacts,
@@ -81,6 +82,23 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
         }
         for(const row of registrants){
           try{events.push(adaptWebinarRegistrant(row,details));}catch{failed++;}
+        }
+      }
+      const coded = await db
+        .from("webinars")
+        .select("id,webinar_date,session_code,client_series,released_codes");
+      if (coded.error) {
+        if (!/session_code|client_series|released_codes/.test(coded.error.message))
+          throw Error("Could not read session codes");
+      } else {
+        for (const next of assignMissingSessionCodes(coded.data || [])) {
+          const write = await db
+            .from("webinars")
+            .update({ session_code: next.session_code, client_series: next.client_series })
+            .eq("id", next.id)
+            .is("session_code", null);
+          if (write.error && !/session_code|client_series/.test(write.error.message))
+            throw Error("Could not assign the session code");
         }
       }
     } else {

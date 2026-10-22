@@ -27,6 +27,9 @@ export interface Webinar {
   operations_updated_at?: string | null;
   id: string;
   external_id: string;
+  session_code?: string | null;
+  client_series?: "TCS" | "QUE" | null;
+  released_codes?: string | null;
   name: string;
   webinar_date: string;
   peak_attendees: number | null;

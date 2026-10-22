@@ -8,7 +8,8 @@ import {
 } from "./integrations/payment-context";
 import { webinarTagMap } from "./integrations/ghl-webinar";
 import { createClient } from "@supabase/supabase-js";
-import { emptyDataset, type Dataset } from "./model";
+import { assignMissingSessionCodes } from "./session-code";
+import { emptyDataset, type Dataset, type Webinar } from "./model";
 import { demoDataset } from "./demo";
 export const isDemo = () => process.env.DEMO_MODE === "true";
 export function database() {
@@ -37,6 +38,26 @@ const tables = {
   mappings: "source_mappings",
   syncRuns: "sync_runs",
 } as const;
+async function persistSessionCodes(
+  db: ReturnType<typeof database>,
+  webinars: Webinar[],
+) {
+  const assigned = assignMissingSessionCodes(webinars);
+  for (const row of assigned) {
+    const saved = await db
+      .from("webinars")
+      .update({ session_code: row.session_code, client_series: row.client_series })
+      .eq("id", row.id)
+      .is("session_code", null)
+      .select("id");
+    if (saved.error && !/session_code|client_series/.test(saved.error.message))
+      throw new Error("Session code could not be saved.");
+  }
+  const byId = new Map(assigned.map((row) => [row.id, row]));
+  return webinars.map((webinar) =>
+    byId.has(webinar.id) ? { ...webinar, ...byId.get(webinar.id) } : webinar,
+  );
+}
 export async function loadDataset(): Promise<{
   data: Dataset;
   demo: boolean;
@@ -70,6 +91,7 @@ export async function loadDataset(): Promise<{
       }),
     );
     Object.assign(data, Object.fromEntries(loaded));
+    data.webinars = await persistSessionCodes(db, data.webinars);
     await Promise.all([
       (async () => {
         try {

@@ -1,7 +1,8 @@
+import { assignMissingSessionCodes } from "./session-code";
 import { emptyDataset } from "./model";
 export function demoDataset() {
   const d = emptyDataset();
-  d.webinars = [
+  d.webinars = assignMissingSessionCodes([
     {
       id: "w1",
       external_id: "demo-oct-14",
@@ -26,7 +27,7 @@ export function demoDataset() {
       peak_attendees: 54,
       pitch_attendees: 43,
     },
-  ];
+  ]);
   const sources = ["instagram", "youtube", "ig", "email", "facebook", "direct"];
   const names = [
     "Olivia",
