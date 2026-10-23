@@ -45,3 +45,15 @@ test("connection storage can be installed twice and prevents sharing one Notion 
  await assert.rejects(db.query("insert into revenue_intelligence.webinars(id,ghl_cohort_tag) values(2,$1)",["first-session"]));
  }finally{await db.close();}
 });
+
+test("legacy rows carrying an upcoming event ID cannot move the old schedule into the new session",async()=>{
+ const {adaptWebinarRegistrant}=await import('../lib/integrations/webinars');
+ const d={webinar_id:2,name:'Masterclass',timezone:'America/New_York',schedules:[{schedule:2,date:'2026-10-14 20:00'},{schedule:5,date:'2026-10-28 19:00'}]};
+ const old={...registrant,schedule_id:2,event_id:2,event:'Wed, 14 Oct 2026, 08:00 PM'};
+ const mixed={...old,id:2,event_id:5,event:'Wed, 28 Oct 2026, 07:00 PM'};
+ const next={...mixed,id:3,schedule_id:5};
+ const sessions=scheduledSessionRows(d,[old,mixed,next]);
+ assert.equal(sessions[0].external_id,'webinarjam:2:2:2');assert.equal(sessions[1].external_id,'webinarjam:2:5:5');
+ const payload=adaptWebinarRegistrant(mixed,d,sessions[0].external_id);
+ assert.equal(payload.registrations?.[0].webinar_external_id,'webinarjam:2:2:2');
+});

@@ -72,3 +72,17 @@ test("CRM cash sums PIF and initial instalments once without substituting contra
   assert.equal(result.contract, 439700);
   assert.equal(result.closers[0].cash, 279700);
 });
+
+
+test("show-up uses finalized GHL attendance only and deduplicates contacts", () => {
+  const d = emptyDataset();
+  const base = { closer: "Brooklyn", outcome: "", structure: "", cashCents: null, contractCents: null };
+  d.crmCallSnapshots = ["Attended", "attended", "No Show", "Cancelled", "Rescheduled", "", "Booked"].map((attendance, i) => ({ ...base, ghl_contact_id: String(i), attendance }));
+  d.crmCallSnapshots.push(d.crmCallSnapshots[0]);
+  const p = crmPerformance(d);
+  assert.equal(p.finalized, 3);
+  assert.equal(p.noShow, 1);
+  assert.equal(p.showRate, 2 / 3);
+  assert.equal(p.closers[0].showRate, 2 / 3);
+  assert.equal(crmPerformance(emptyDataset()).showRate, null);
+});

@@ -24,6 +24,7 @@ async function sourceNeedsRefresh(
       .from("sync_runs")
       .select("id")
       .eq("source", source)
+      .eq("status", "succeeded")
       .not("completed_at", "is", null)
       .gte("completed_at", recentCutoff)
       .limit(1),

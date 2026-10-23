@@ -13,8 +13,7 @@ test("pagination refuses partial or repeated records instead of reporting a comp
   assert.throws(() => verifyRegistrantPages([row, row], 2), /Duplicate/);
   assert.doesNotThrow(() => verifyRegistrantPages([row, { ...row, id: 2 }], 2));
 });
-test("aggregate CSV reference flags discrepancies without altering imported denominators", () => {
-  assert.equal(registrantReview("webinarjam:2:2:2", 274)?.difference, 17);
-  assert.equal(registrantReview("webinarjam:2:2:2", 291), null);
+test("retired CSV reference does not flag the confirmed API total", () => {
+  assert.equal(registrantReview("webinarjam:2:2:2", 274), null);
   assert.equal(registrantReview("another-session", 274), null);
 });

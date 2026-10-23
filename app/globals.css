@@ -2384,3 +2384,21 @@ input,textarea{font:inherit;border-radius:4px;border-color:#dedee4;accent-color:
 @media(max-width:650px){.session-setup-grid{grid-template-columns:1fr}.session-setup>summary>span:last-child{display:none}.session-setup form{padding:16px}.session-setup-footer{align-items:flex-start;flex-direction:column}}
 .attendance-import{padding:20px 22px;border-top:1px solid #eeeef2;font-size:12px;line-height:1.6}.attendance-file-label{display:flex;flex-direction:column;gap:9px;margin-top:20px}.attendance-file-label input{padding:12px;border:1px solid #e5e5e9;border-radius:5px;background:#fff}.attendance-import td,.attendance-import th{padding:12px;text-align:left}.attendance-import>.table-scroll{max-height:360px;overflow:auto}
 .notion-session-summary{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 22px;margin-bottom:20px}.notion-session-summary>div{display:flex;flex-direction:column;gap:5px;margin-right:auto}.notion-session-summary strong{font-size:13px}.notion-session-summary span{font-size:11px;color:#85858f}.notion-session-summary nav{display:flex;flex-wrap:wrap;gap:10px 18px;width:100%;font-size:12px;color:#d84c35}.notion-session-summary .error-banner{width:100%;margin:0}
+
+/* Keep reporting separate from session administration. */
+.webinar-resource-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:-8px 0 20px}
+.webinar-resource-bar a{display:inline-flex;align-items:center;padding:7px 11px;border:1px solid #e5e5ea;border-radius:5px;background:#fff;font-size:12px;color:#52525b;text-decoration:none}
+.webinar-resource-bar a:hover{border-color:#ff5539;color:#e64a30;background:#fff8f5}
+.webinar-resource-bar:empty{display:none}
+.webinar-data-note{border:1px solid #eddfc2;border-radius:5px;background:#fffbf3;margin-bottom:20px;color:#725322}
+.webinar-data-note summary{display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;font-size:12px;font-weight:500}
+.webinar-data-note summary span{margin-left:auto;font-size:11px;text-decoration:underline}
+.webinar-data-note p{padding:0 14px 13px;font-size:12px;line-height:1.6}
+.webinar-admin-tools{margin:0 0 20px}
+.webinar-admin-tools>summary{display:flex;justify-content:space-between;gap:12px;padding:17px 20px;cursor:pointer;font-size:13px;font-weight:600}
+.webinar-admin-tools>summary>span:last-child{font-size:11px;color:#85858f;font-weight:400}
+.webinar-admin-content{border-top:1px solid #eeeef2;padding:18px}
+.webinar-admin-content .session-setup{margin-bottom:10px}
+.webinar-admin-content .session-setup:last-child{margin-bottom:0}
+.webinar-admin-content .session-series{margin:0 0 18px}
+@media(max-width:650px){.webinar-admin-tools>summary>span:last-child{display:none}.webinar-admin-content{padding:12px}.webinar-data-note summary{flex-wrap:wrap}.webinar-data-note summary span{margin-left:22px}.webinar-resource-bar a{font-size:11px}}

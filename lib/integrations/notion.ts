@@ -63,24 +63,34 @@ export async function notionWebinars(webinars:Webinar[]):Promise<Webinar[]> {
 }
 
 
-// Only this automatic field is written to Notion. Manual peak/pitch and links
-// belong to the moderator and are never part of the update payload.
-export async function syncNotionRegistrantCounts(counts: Record<string,number>, webinars:Webinar[] = []) {
+// Automatic counts only. Moderator inputs and formula properties are never written.
+export async function syncNotionCounts(counts: Record<string,{registrants?:number;bookings?:number}>, webinars:Webinar[] = []) {
  const mapping=notionSessionMap(webinars);
  const targets=Object.entries(counts).filter(([external])=>mapping[external]);
  if(!targets.length)return {updated:0};
  const db=await request(`databases/${uuid.parse(process.env.NOTION_DATABASE_ID)}`);
  const sources=z.array(z.object({id:uuid})).parse(db.data_sources);
  let updated=0;
- for(const [external,total] of targets){
-  const count=z.number().int().nonnegative().parse(total);
+ for(const [external,totals] of targets){
   const page=pageSchema.parse(await request(`pages/${mapping[external]}`));
   if(!page.parent.data_source_id || !sources.some(s=>s.id===uuid.parse(page.parent.data_source_id)))throw Error("Notion event belongs to a different database.");
-  if(page.properties.Registrants?.type!=="number")throw Error("Notion Registrants must be a number field.");
-  if(page.properties.Registrants.number===count)continue;
-  await request(`pages/${mapping[external]}`,{properties:{Registrants:{number:count}}},"PATCH");updated++;
+  const properties:Record<string,{number:number}>={};
+  for(const [key,name]of [["registrants","Registrants"],["bookings","Calls booked"]] as const){
+   if(totals[key]===undefined)continue;
+   const count=z.number().int().nonnegative().parse(totals[key]);
+   if(page.properties[name]?.type!=="number")throw Error(`Notion ${name} must be a number field.`);
+   if(page.properties[name].number!==count)properties[name]={number:count};
+  }
+  if(!Object.keys(properties).length)continue;
+  await request(`pages/${mapping[external]}`,{properties},"PATCH");
+  const verified=pageSchema.parse(await request(`pages/${mapping[external]}`));
+  if(Object.entries(properties).some(([key,value])=>verified.properties[key]?.number!==value.number))throw Error("Notion count write could not be verified.");
+  updated++;
  }
  return {updated};
+}
+export function syncNotionRegistrantCounts(counts: Record<string,number>, webinars:Webinar[] = []) {
+ return syncNotionCounts(Object.fromEntries(Object.entries(counts).map(([id,registrants])=>[id,{registrants}])),webinars);
 }
 
 

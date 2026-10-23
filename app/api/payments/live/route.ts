@@ -47,12 +47,20 @@ export async function GET() {
       (async () => {
         const result = await database().from("webinars").select("*");
         if (result.error) return undefined;
-        return notionWebinars(result.data);
+        const appointments: import("../../../../lib/model").Appointment[] = [];
+        for (let start = 0; ; start += 1000) {
+          const page = await database().from("appointments").select("*").order("id").range(start,start+999);
+          if (page.error) return undefined;
+          appointments.push(...page.data);
+          if (page.data.length < 1000) break;
+        }
+        return { webinars: await notionWebinars(result.data), appointments };
       })(),
     ]);
     return NextResponse.json(
       {
-        webinars: sessions,
+        webinars: sessions?.webinars,
+        appointments: sessions?.appointments,
         whopPayments: payments.value,
         whopHistoryError: payments.error,
         whopBalance: balance.value,
@@ -61,6 +69,7 @@ export async function GET() {
         crmPaymentStructures: crm.value?.rows,
         crmCash: crm.value?.cashRows,
         crmCallSnapshots: crm.value?.snapshots,
+        crmAttribution: crm.value?.attributionRows,
         crmSnapshotError: crm.error || crm.value?.snapshotError || null,
         crmAttendance: crm.value?.attendanceRows,
         crmAttendanceError: crm.error || crm.value?.attendanceError || null,

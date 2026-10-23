@@ -118,6 +118,7 @@ export async function loadDataset(): Promise<{
           data.crmPaymentStructures = context.rows;
           data.crmCash = context.cashRows;
           data.crmCallSnapshots = context.snapshots;
+          data.crmAttribution = context.attributionRows;
           data.crmSnapshotError = context.snapshotError;
           data.crmAttendance = context.attendanceRows;
           data.crmAttendanceError = context.attendanceError;

@@ -1,4 +1,8 @@
 "use client";
+import { WebinarCrmAttribution } from "./webinar-crm-attribution";
+import { MetricHelp } from "./metric-help";
+import { WebinarBookingLinks } from "./webinar-booking-links";
+import { bookingSourceCounts } from "../lib/booking-source";
 import { WebinarConnections } from "./webinar-connections";
 import { WebinarAttendance } from "./webinar-attendance";
 import { WebinarSessionSetup } from "./webinar-session-setup";
@@ -399,21 +403,6 @@ export function WebinarPerformance({
         <div>
           <span className="report-kicker">{w.session_code || "WEBINAR PERFORMANCE"}</span>
           <h2>{w.name}</h2>
-          <label className="session-series">
-            Client
-            <SelectControl
-              aria-label="Client series"
-              disabled={busy}
-              value={w.client_series === "QUE" ? "QUE" : "TCS"}
-              onValueChange={(value) => void changeSeries(value)}
-            >
-              {clientSeries.map((series) => (
-                <option key={series} value={series}>
-                  {series} · {clientSeriesLabels[series]}
-                </option>
-              ))}
-            </SelectControl>
-          </label>
           <p>
             <CalendarDays size={13} />
             {new Date(w.webinar_date).toLocaleString("en-GB", {
@@ -422,25 +411,30 @@ export function WebinarPerformance({
               timeZone: "UTC",
             })}{" "}
             UTC
-            <span className="report-separator" />
-            Full session
+
           </p>
         </div>
         <span
-          className={`report-readiness ${known === 5 && !reconciliation ? "complete" : ""}`}
+          className={`report-readiness ${known === 5 && !reconciliation && !k.issues.length ? "complete" : ""}`}
         >
-          {known === 5 && !reconciliation ? (
+          {known === 5 && !reconciliation && !k.issues.length ? (
             <CheckCircle2 size={14} />
           ) : (
             <CircleDashed size={14} />
           )}{" "}
-          {reconciliation
+          {reconciliation || k.issues.length
             ? "Data review needed"
             : known === 5
               ? "Report complete"
               : `${known + 1} of 6 inputs ready`}
         </span>
       </section>
+      <nav className="webinar-resource-bar" aria-label="Session resources">
+        {w.notion_page_url && <a href={w.notion_page_url} target="_blank" rel="noopener noreferrer">Open in Notion ↗</a>}
+        {w.slides_url && <a href={w.slides_url} target="_blank" rel="noopener noreferrer">Slides ↗</a>}
+        {w.replay_url && <a href={w.replay_url} target="_blank" rel="noopener noreferrer">Replay ↗</a>}
+        {w.notion_error && <span className="error-banner" role="alert">{w.notion_error}</span>}
+      </nav>
       {known < 5 && (
         <div className="report-action">
           <span className="report-action-icon">
@@ -459,35 +453,16 @@ export function WebinarPerformance({
           </button>
         </div>
       )}
+      {k.issues.length > 0 && <details className="webinar-data-note"><summary><Info size={14} /> Report inputs need review <span>View details</span></summary><p>{k.issues.join(". ")}. Affected rates are unavailable until corrected.</p></details>}
       {reconciliation && (
-        <div className="report-reconciliation" role="status">
-          <Info size={17} />
-          <div>
-            <strong>Registrant total needs review</strong>
-            <p>
-              {reconciliation.importedUnique} unique registrants are imported.
-              Your analytics CSV reports {reconciliation.registrants} — a
-              difference of {reconciliation.difference}. Rates currently use the
-              imported unique count; do not treat the attendance rate as
-              reconciled yet.
-            </p>
-            <small>
-              API check: all 11 pages returned 274 distinct records for schedule
-              2 / event 2 on 20 Oct 2026. WebinarJam’s Active registrants page
-              also shows 274, while its Analytics page shows 291. The
-              discrepancy is within the source platform and needs provider
-              clarification.
-            </small>
-          </div>
-        </div>
+        <details className="webinar-data-note">
+          <summary><Info size={14} /> Registrant count differs across sources <span>View details</span></summary>
+          <p>Rates use {reconciliation.importedUnique} imported unique registrants. The analytics CSV reports {reconciliation.registrants}, a difference of {reconciliation.difference}. Attendance rate remains provisional until these totals are reconciled.</p>
+        </details>
       )}
-      <WebinarConnections key={`connection:${w.id}`} webinar={w} />
-      <WebinarSessionSetup key={w.id} webinar={w} />
-      <WebinarAttendance key={`attendance:${w.id}`} webinarId={w.id} />
-      <ReportVisuals data={data} webinar={w} onSource={onSource} />
       <div className="report-metric-heading">
         <h3>Webinar conversion rates</h3>
-        <span>Five metrics · one consistent definition</span>
+
       </div>
       <div className="report-kpi-cards">
         {cards.map(([name, value, formula, description], i) => (
@@ -516,6 +491,7 @@ export function WebinarPerformance({
           </button>
         ))}
       </div>
+      <ReportVisuals data={data} webinar={w} onSource={onSource} />
       <div className="report-analysis-grid">
         <section className="panel">
           <div className="panel-head">
@@ -559,6 +535,17 @@ export function WebinarPerformance({
                   </div>
                 ))}
               </div>
+              <details className="reporting-details">
+                <summary>Booking channel breakdown</summary>
+                <div>{(() => {
+                  const counts = bookingSourceCounts(data.appointments, w);
+                  return <div className="report-branches">
+                    <div><span>Live CTA link</span><strong>{counts.live}</strong></div>
+                    <div><span>Follow-up links</span><strong>{counts.after}</strong></div>
+                    <div><span>Channel unknown</span><strong>{counts.unknown}</strong></div>
+                  </div>;
+                })()}</div>
+              </details>
               <div className="report-branches">
                 <div>
                   <span>Applications</span>
@@ -566,7 +553,7 @@ export function WebinarPerformance({
                   <small>Application = Yes</small>
                 </div>
                 <div>
-                  <span>Calls booked</span>
+                  <span>Webinar contacts who booked <MetricHelp>Unique contacts linked by this webinar’s GHL tag or an exact email match to its imported registrations, with a booking created after the webinar started. Latest eligible session wins; exact tracked booking evidence can also link the session. Cancelled bookings excluded. This does not prove attendance or a particular booking channel.</MetricHelp></span>
                   <strong>{w.call_booked_count ?? "—"}</strong>
                   <small>
                     {w.applicant_booked_count ?? "—"} from applicants
@@ -703,6 +690,29 @@ export function WebinarPerformance({
           </div>
         </section>
       </div>
+      <WebinarCrmAttribution data={data} webinarId={w.id} />
+      <details className="panel webinar-admin-tools">
+        <summary><span>Session settings & data</span><span>Connections, booking links and attendance import</span></summary>
+        <div className="webinar-admin-content">
+          <label className="session-series">
+            Client
+            <SelectControl
+              aria-label="Client series"
+              disabled={busy}
+              value={w.client_series === "QUE" ? "QUE" : "TCS"}
+              onValueChange={(value) => void changeSeries(value)}
+            >
+              {clientSeries.map((series) => (
+                <option key={series} value={series}>
+                  {series} · {clientSeriesLabels[series]}
+                </option>
+              ))}
+            </SelectControl>
+          </label>
+          <WebinarConnections key={`connection:${w.id}`} webinar={w} />
+          {!w.notion_managed && <WebinarSessionSetup key={w.id} webinar={w} />}
+          <WebinarBookingLinks key={`booking-${w.id}`} webinar={w} />
+          <WebinarAttendance key={`attendance:${w.id}`} webinarId={w.id} />
       <section className="panel report-input-summary">
         <div className="panel-head">
           <div>
@@ -792,6 +802,8 @@ export function WebinarPerformance({
             : ""}
         </p>
       </section>
+        </div>
+      </details>
       {editing && (
         <div className="overlay" onClick={() => !busy && setEditing(false)}>
           <section

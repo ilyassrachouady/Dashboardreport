@@ -1,4 +1,7 @@
 import "server-only";
+import { syncNotionCounts } from "./integrations/notion";
+import { fetchBookingSources } from "./integrations/booking-sources";
+import { matchBookingSource } from "./booking-source";
 import { database } from "./db";
 import {
   bookingWebinar,
@@ -30,6 +33,7 @@ export async function syncBookings(
         id: string;
         tags?: string[];
         customFields?: Array<{ id: string; value: unknown }>;
+        email?: string | null;
       };
       return [c.id, c];
     }),
@@ -38,7 +42,7 @@ export async function syncBookings(
   for (let offset = 0; ; offset += 1000) {
     const r = await db
       .from("contacts")
-      .select("id,ghl_contact_id")
+      .select("id,ghl_contact_id,email")
       .order("id")
       .range(offset, offset + 999);
     if (r.error) throw new Error("Cannot read reporting contacts");
@@ -61,14 +65,32 @@ export async function syncBookings(
       throw new Error("Booking contact identity needs review");
     const linked = await db
       .from("contacts")
-      .select("id,ghl_contact_id")
+      .select("id,ghl_contact_id,email")
       .eq("ghl_contact_id", id)
       .single();
     if (linked.error) throw new Error("Booking contact could not be linked");
     stored.push(linked.data);
     identities.set(id, linked.data.id);
   }
+  const registeredSessions = new Map<string, Set<string>>();
+  const emails = new Map(stored.map(c => [c.id, c.email?.trim().toLowerCase()]));
+  for (let offset = 0; ; offset += 1000) {
+    const page = await db.from("webinar_registrations").select("id,contact_id,webinar_id").order("id").range(offset,offset+999);
+    if (page.error) throw new Error("Cannot verify webinar registration email matches");
+    for (const row of page.data) {
+      const email = emails.get(row.contact_id);
+      if (!email) continue;
+      const matched = registeredSessions.get(email) || new Set<string>();
+      matched.add(row.webinar_id); registeredSessions.set(email,matched);
+    }
+    if (page.data.length < 1000) break;
+  }
   const map = webinarTagMap(sessions);
+  const sources = await fetchBookingSources(sessions);
+  const sourceSchema = await db.from("appointments").select("booking_source").limit(0);
+  const sourceColumnsAvailable = !sourceSchema.error;
+  if (sourceSchema.error && !/booking_source/.test(sourceSchema.error.message)) throw new Error("Cannot check booking source storage");
+  if (!sourceColumnsAvailable && sources.rules.length) throw new Error("Apply migration 006 before syncing webinar booking sources");
   const rows = events.map((e) => {
     const contactId = identities.get(e.contactId),
       person = people.get(e.contactId);
@@ -76,14 +98,16 @@ export async function syncBookings(
       throw new Error(
         "Booking contact missing from reporting; run GHL contact sync first",
       );
+    const source = matchBookingSource(e.id, e.contactId, process.env.GHL_LOCATION_ID!, sources.evidence, sources.rules);
     return {
+      ...(sourceColumnsAvailable ? { booking_source: source?.booking_source ?? null, booking_source_event_id: source?.booking_source_event_id ?? null } : {}),
       contact_id: contactId,
       ghl_appointment_id: e.id,
       scheduled_at: new Date(e.startTime).toISOString(),
       booked_at: new Date(e.dateAdded).toISOString(),
       status: e.deleted ? "deleted" : e.appointmentStatus.toLowerCase(),
       closer: e.assignedUserId || "",
-      webinar_id: bookingWebinar(e, person.tags || [], sessions, map),
+      webinar_id: source?.webinar_id ?? bookingWebinar(e, person.tags || [], sessions, map, [...(registeredSessions.get(person.email?.trim().toLowerCase() || "") || [])]),
     };
   });
   // Save only after the complete provider snapshot has validated. Stable appointment IDs make reruns safe.
@@ -115,8 +139,9 @@ export async function syncBookings(
     if (saved.error) throw new Error("Cannot save calendar bookings");
   }
   const now = new Date().toISOString();
+  const notionCounts: Record<string,{bookings:number}> = {};
   for (const session of sessions) {
-    if (!map[session.external_id]) continue;
+    if (!map[session.external_id] && ![...registeredSessions.values()].some(ids => ids.has(session.id))) continue;
     const booked = new Set(
       rows
         .filter((r) => r.webinar_id === session.id && isBooked(r.status))
@@ -128,6 +153,7 @@ export async function syncBookings(
           const person = people.get(c.ghl_contact_id || "");
           return (
             person &&
+            (booked.has(c.id) || person.tags?.includes(map[session.external_id]) || registeredSessions.get(person.email?.trim().toLowerCase() || "")?.has(session.id)) &&
             String(
               person.customFields?.find(
                 (f) => f.id === fields.application_submitted,
@@ -142,14 +168,16 @@ export async function syncBookings(
     const result = await db
       .from("webinars")
       .update({
+        ...(fields.application_submitted ? { application_count: applicants.size } : {}),
         call_booked_count: booked.size,
-        applicant_booked_count: [...booked].filter((id) => applicants.has(id))
-          .length,
+        applicant_booked_count: fields.application_submitted ? [...booked].filter((id) => applicants.has(id)).length : null,
         kpi_updated_at: now,
       })
       .eq("id", session.id);
     if (result.error) throw new Error("Cannot save webinar booking counts");
+    notionCounts[session.external_id] = {bookings:booked.size};
   }
+  await syncNotionCounts(notionCounts,sessions);
   const audit = await db.from("sync_runs").insert({
     source: "ghl_bookings",
     status: "succeeded",

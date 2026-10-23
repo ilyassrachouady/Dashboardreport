@@ -53,19 +53,21 @@ const registrant = z.object({
   first_name: z.string().nullish(),
   last_name: z.string().nullish(),
   signup_date: z.string(),
+  event: z.string().optional(),
   utm_source: z.unknown().optional(),
   utm_medium: z.unknown().optional(),
   utm_campaign: z.unknown().optional(),
   utm_content: z.unknown().optional(),
 });
-export function adaptWebinarRegistrant(raw: unknown, details: unknown) {
+export function adaptWebinarRegistrant(raw: unknown, details: unknown, canonicalExternalId?: string) {
   const w = webinar.parse(details),
     r = registrant.parse(raw);
   const s = w.schedules.find(
     (s) => String(s.schedule) === String(r.schedule_id),
   );
   if (!s) throw new Error("Unmapped WebinarJam schedule");
-  const id = `webinarjam:${w.webinar_id}:${s.schedule}:${r.event_id || s.date}`;
+  const id = canonicalExternalId || `webinarjam:${w.webinar_id}:${s.schedule}:${r.event_id || s.date}`;
+  if (!id.startsWith(`webinarjam:${w.webinar_id}:${s.schedule}:`)) throw Error("Canonical registration session does not match provider schedule");
   const rawValue = (v: unknown) => (typeof v === "string" ? v : "");
   const payload = {
     provider: "webinars",
@@ -175,7 +177,10 @@ export function scheduledSessionRows(details: z.infer<typeof webinar>, rows: unk
   const registrations=rows.map(r=>registrant.parse(r));
   return details.schedules.map(schedule=>{
     const matching=registrations.filter(r=>String(r.schedule_id)===String(schedule.schedule));
-    const events=[...new Set(matching.filter(r=>r.event_id!=null).map(r=>String(r.event_id)))];
+    // Some legacy rows retain their old schedule but expose the current event ID.
+    // Accept an event ID only when its explicit event date agrees with that schedule.
+    const dated=matching.filter(r=>!r.event || webinarTimestamp(r.event,details.timezone)===webinarTimestamp(schedule.date,details.timezone));
+    const events=[...new Set(dated.filter(r=>r.event_id!=null).map(r=>String(r.event_id)))];
     if(events.length>1)throw Error("WebinarJam returned multiple occurrences for one schedule without separate dates; review session identity before importing.");
     return {provider:"webinars",external_id:`webinarjam:${details.webinar_id}:${schedule.schedule}:${events[0]||schedule.date}`,name:details.name,webinar_date:webinarTimestamp(schedule.date,details.timezone)};
   });

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { notionWebinars, syncNotionRegistrantCounts } from "../lib/integrations/notion";
+import { notionWebinars, syncNotionRegistrantCounts, syncNotionCounts } from "../lib/integrations/notion";
 const dbid="00000000000040008000000000000001", source="00000000-0000-4000-8000-000000000002",pageid="00000000-0000-4000-8000-000000000003";
 function page(peak:number|null=72,pitch:number|null=62){return {id:pageid,url:`https://www.notion.so/${pageid}`,last_edited_time:"2026-10-22T12:00:00Z",parent:{data_source_id:source},properties:{"Attendees at Peak":{type:"number",number:peak},"Attendees at Pitch":{type:"number",number:pitch},Slides:{type:"url",url:null},"Replay Link":{type:"url",url:"https://example.com/replay"},"Link for Presenter":{type:"url",url:null},Registrants:{type:"number",number:272},Audience:{multi_select:[{name:"Organic"}]},Status:{status:{name:"Done"}}}};}
 test("Notion is the sole manual-input source; refreshes read changes and blank counts remain unknown",async()=>{
@@ -30,5 +30,16 @@ test("saved session connections work without editing environment maps",async()=>
  const old=globalThis.fetch,env={...process.env};Object.assign(process.env,{NOTION_API_KEY:"test",NOTION_DATABASE_ID:dbid,NOTION_SESSION_MAP_JSON:"{}"});
  globalThis.fetch=async(url)=>Response.json(String(url).includes('/query')?{results:[page()],has_more:false}:{data_sources:[{id:source}]});
  try{const w={id:"future",external_id:"webinarjam:99:1:1",name:"Future webinar",webinar_date:"2026-10-24T20:00:00Z",peak_attendees:null,pitch_attendees:null,notion_page_id:pageid};const result=(await notionWebinars([w]))[0];assert.equal(result.peak_attendees,72);assert.equal(result.notion_managed,true);}
+ finally{globalThis.fetch=old;process.env=env;}
+});
+
+test("booking write-back changes only Calls booked, verifies it, and skips repeat writes",async()=>{
+ const old=globalThis.fetch,env={...process.env};const current={...page(),properties:{...page().properties,"Calls booked":{type:"number",number:0}}};let writes=0;
+ Object.assign(process.env,{NOTION_API_KEY:"test",NOTION_DATABASE_ID:dbid,NOTION_SESSION_MAP_JSON:JSON.stringify({session:pageid})});
+ globalThis.fetch=async(url,options)=>{
+  if(options?.method==="PATCH"){writes++;assert.deepEqual(JSON.parse(String(options.body)),{properties:{"Calls booked":{number:25}}});current.properties["Calls booked"].number=25;return Response.json(current);}
+  return Response.json(String(url).includes('/databases/')?{data_sources:[{id:source}]}:current);
+ };
+ try{assert.equal((await syncNotionCounts({session:{bookings:25}})).updated,1);assert.equal((await syncNotionCounts({session:{bookings:25}})).updated,0);assert.equal(writes,1);assert.equal(current.properties['Attendees at Peak'].number,72);}
  finally{globalThis.fetch=old;process.env=env;}
 });

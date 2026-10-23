@@ -1,4 +1,6 @@
 import "server-only";
+import {syncAttendanceTags} from "./sync-attendance-tags";
+import {syncProviderAttendance} from "./sync-provider-attendance";
 import { notionSessionMap, syncNotionRegistrantCounts } from "./integrations/notion";
 import { fetchWhopHistory } from "./integrations/whop-history";
 import { syncBookings } from "./sync-bookings";
@@ -36,6 +38,7 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
     failed = 0;
   try {
     let events: IngestionEvent[] = [];
+    const attendanceBatches:Array<{id:string;registrants:unknown[]}>=[];
     let ghlContext:
       { contacts: unknown[]; fields: Record<string, string> } | undefined;
     if (source === "ghl") {
@@ -64,7 +67,9 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
       const ids=await discoverWebinars();
       for(const webinarId of ids){
         const {details,registrants}=await fetchWebinarRegistrants(webinarId);
-        for(const row of scheduledSessionRows(details,registrants)){
+        const sessionRows=scheduledSessionRows(details,registrants);
+        const canonical=new Map<string,string>();
+        for(const row of sessionRows){
           // Promote a zero-registration placeholder once its provider event ID
           // becomes known, preserving the session UUID and its Notion link.
           const prefix=row.external_id.split(":").slice(0,3).join(":")+":";
@@ -73,6 +78,7 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
           const placeholderId=`${prefix}${details.schedules.find(s=>row.external_id.startsWith(`webinarjam:${details.webinar_id}:${s.schedule}:`))?.date}`;
           const identity=reconcileScheduledSession(row,existing.data,placeholderId);
           row.external_id=identity.externalId;
+          canonical.set(row.external_id.split(":")[2],row.external_id);
           if(identity.promoteId){
             const promoted=await db.from("webinars").update({external_id:row.external_id}).eq("id",identity.promoteId);
             if(promoted.error)throw Error("Could not reconcile the scheduled session");
@@ -80,8 +86,13 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
           const saved=await db.from("webinars").upsert(row,{onConflict:"provider,external_id"});
           if(saved.error)throw Error("Could not save discovered session");
         }
+        const attendanceRows=registrants.map(raw=>{
+          const row=raw as Record<string,unknown>,id=canonical.get(String(row.schedule_id));
+          return id?{...row,event_id:id.split(":").slice(3).join(":")}:row;
+        });
+        attendanceBatches.push({id:webinarId,registrants:attendanceRows});
         for(const row of registrants){
-          try{events.push(adaptWebinarRegistrant(row,details));}catch{failed++;}
+          try{events.push(adaptWebinarRegistrant(row,details,canonical.get(String((row as Record<string,unknown>).schedule_id))));}catch{failed++;}
         }
       }
       const coded = await db
@@ -135,8 +146,10 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
     await Promise.all(
       Array.from({ length: source === "whop" ? 1 : 6 }, worker),
     );
+    if (!failed) for(const batch of attendanceBatches) await syncProviderAttendance(batch.id,batch.registrants);
     if (ghlContext && !failed)
       await syncBookings(ghlContext.contacts, ghlContext.fields);
+    if (!failed && (source === "ghl" || source === "webinars")) await syncAttendanceTags();
     if (source === "webinars" && !failed) {
       const sessions=await db.from("webinars").select("*");
       if(sessions.error)throw new Error("Notion session lookup failed");

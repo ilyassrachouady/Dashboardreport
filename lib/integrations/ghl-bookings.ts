@@ -20,6 +20,7 @@ export function bookingWebinar(
   tags: string[],
   sessions: Array<{ id: string; external_id: string; webinar_date: string }>,
   tagMap: Record<string, string>,
+  emailMatchedSessions: string[] = [],
 ) {
   const bookedAt = Date.parse(booking.dateAdded);
   if (
@@ -27,18 +28,13 @@ export function bookingWebinar(
     !Number.isFinite(Date.parse(booking.startTime))
   )
     throw new Error("Invalid GHL appointment timestamps");
-  // One booking belongs to the latest tagged session already started when it was created.
-  return (
-    sessions
-      .filter(
-        (w) =>
-          tagMap[w.external_id] &&
-          tags.includes(tagMap[w.external_id]) &&
-          Date.parse(w.webinar_date) <= bookedAt,
-      )
-      .sort((a, b) => b.webinar_date.localeCompare(a.webinar_date))[0]?.id ??
-    null
-  );
+  // Cohort association, not proof of a live CTA click or attendance.
+  const eligible = sessions.filter(w =>
+    ((tagMap[w.external_id] && tags.includes(tagMap[w.external_id])) || emailMatchedSessions.includes(w.id)) &&
+    Date.parse(w.webinar_date) <= bookedAt,
+  ).sort((a,b) => b.webinar_date.localeCompare(a.webinar_date));
+  if (eligible.length > 1 && Date.parse(eligible[0].webinar_date) === Date.parse(eligible[1].webinar_date)) return null;
+  return eligible[0]?.id ?? null;
 }
 export async function fetchGhlBookings(start: number, end: number) {
   const calendarIds = (process.env.GHL_REPORTING_CALENDAR_IDS || "")

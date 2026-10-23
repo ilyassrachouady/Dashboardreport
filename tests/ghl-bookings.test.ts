@@ -62,3 +62,11 @@ test("cancelled, invalid and deleted bookings never enter active booked counts",
   for (const status of ["confirmed", "new", "showed", "noshow"])
     assert.equal(isBooked(status), true);
 });
+
+test("exact email cohort membership works without tags, with latest session winning", () => {
+ const sessions=[session("old","2026-10-01T00:00:00Z"),session("current","2026-10-15T00:00:00Z"),session("future","2026-10-16T00:00:00Z")];
+ assert.equal(bookingWebinar(event,[],sessions,{},["old","current","future"]),"current");
+ assert.equal(bookingWebinar(event,[],sessions,{},[]),null);
+ assert.equal(bookingWebinar({...event,dateAdded:"2026-09-01T00:00:00Z"},[],sessions,{},["current"]),null);
+ assert.equal(bookingWebinar(event,[],[session("a","2026-10-15T00:00:00Z"),session("b","2026-10-15T00:00:00Z")],{},["a","b"]),null);
+});

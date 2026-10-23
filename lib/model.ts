@@ -24,6 +24,7 @@ export interface Webinar {
   live_booking_url?: string | null;
   replay_booking_url?: string | null;
   followup_booking_url?: string | null;
+  whatsapp_booking_url?: string | null;
   operations_updated_at?: string | null;
   id: string;
   external_id: string;
@@ -61,6 +62,8 @@ export interface Touch {
   occurred_at: string;
 }
 export interface Appointment {
+  booking_source?: "live" | "replay" | "followup" | null;
+  booking_source_event_id?: string | null;
   id: string;
   contact_id: string;
   scheduled_at: string;
@@ -169,6 +172,7 @@ export interface Dataset {
     cashCents: number | null;
     contractCents: number | null;
   }[];
+  crmAttribution?: {ghl_contact_id:string;source:string;content:string;campaign:string;firstTouch:string;lastTouch:string}[];
   crmSnapshotError?: string;
   whopFetchedAt?: string;
   trakyoTransactions?: {

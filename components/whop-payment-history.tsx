@@ -35,6 +35,11 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
         </div>
         <div className="kpi-grid">
           <div className="kpi">
+            <div className="kpi-label">Show-up rate</div>
+            <div className="kpi-value">{available ? percent(p.showRate) : "—"}</div>
+            <MetricHelp>{p.attended} attended / {p.finalized} finalized attendance records. Excludes cancelled, rescheduled and blank attendance. Current GHL contact fields; each contact counts once.</MetricHelp>
+          </div>
+          <div className="kpi">
             <div className="kpi-label">Attended contacts</div>
             <div className="kpi-value">{available ? p.attended : "—"}</div>
             <MetricHelp>GHL Attendance = Attended</MetricHelp>
@@ -72,6 +77,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
                   <th>GHL closer</th>
                   <th>Attended contacts</th>
                   <th>Sold contacts</th>
+                  <th>Show-up rate</th>
                   <th>Close rate</th>
                   <th>PIF</th>
                   <th>Manual plans</th>
@@ -88,6 +94,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
                     <td>{c.closer}</td>
                     <td>{c.attended}</td>
                     <td>{c.sold}</td>
+                    <td>{percent(c.showRate)}</td>
                     <td>{percent(c.closeRate)}</td>
                     <td>{c.pif}</td>
                     <td>{c.manual}</td>

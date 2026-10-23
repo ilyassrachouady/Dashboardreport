@@ -59,3 +59,10 @@ test("missing counts and zero denominators never produce a fabricated zero rate"
     0,
   );
 });
+
+test("contradictory audience and applicant subsets do not display valid-looking conversion rates", () => {
+ const d=emptyDataset();
+ const w={id:"w",external_id:"e",name:"Invalid",webinar_date:"2026-10-14T19:00:00Z",peak_attendees:72,pitch_attendees:80,application_count:10,call_booked_count:5,applicant_booked_count:12};
+ const k=webinarKpis(d,w);
+ assert.equal(k.attendance,null);assert.equal(k.retention,null);assert.equal(k.applicantBooking,null);assert.equal(k.issues.length,4);
+});

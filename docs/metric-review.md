@@ -13,7 +13,7 @@ Source/code review, not a reconciliation of every live customer transaction.
 | Whop receipts / volume | Successful processor payment records | Different from GHL cash and account balance. Native currencies kept separate; all-currency USD conversion labelled. Test payments can be present. |
 | Whop account balance | Direct Whop account holdings | Includes available/pending/reserved funds and currency conversion; not gross sales. |
 | First matched Whop payment | First matched stored successful receipt | Missing match means unknown receipt history, not proof the customer has not paid. |
-| Webinar rates | Session counts and imported unique registrations | Peak and pitch need supplied session data. Known 274 vs 291 source discrepancy remains unresolved; attendance rate is not reconciled. |
+| Webinar rates | Session counts and imported unique registrations | Peak and pitch need supplied session data. TCS001 confirmed total is 274 unique registrants. |
 
 ## Remaining data requirements
 

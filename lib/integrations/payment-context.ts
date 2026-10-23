@@ -13,6 +13,7 @@ export async function fetchCrmPaymentStructures(location: string) {
   const ids = [
     ...new Set(
       [
+        fields.trakyo_source,
         fields.payment_structure,
         fields.cash_collected,
         fields.attendance,
@@ -36,6 +37,7 @@ export async function fetchCrmPaymentStructures(location: string) {
   const cashRows: { ghl_contact_id: string; cashCents: number | null }[] = [];
   const attendanceRows: { ghl_contact_id: string; value: string }[] = [];
   const snapshots: NonNullable<Dataset["crmCallSnapshots"]> = [];
+  const attributionRows: NonNullable<Dataset["crmAttribution"]> = [];
   const rows = contacts.flatMap((raw) => {
     const c = z
       .object({
@@ -51,7 +53,8 @@ export async function fetchCrmPaymentStructures(location: string) {
       c.customFields?.find((f) => f.id === fields[key])?.value;
     const text = (key: string) =>
       typeof get(key) === "string" ? String(get(key)).trim() : "";
-    snapshots.push({
+    attributionRows.push({ghl_contact_id:c.id,source:text("trakyo_source"),content:text("trakyo_content"),campaign:text("trakyo_campaign"),firstTouch:text("trakyo_first_touch"),lastTouch:text("trakyo_last_touch")});
+    if (["attendance","call_outcome","closer","payment_structure","cash_collected","agreed_total_investment"].some(key => get(key) !== undefined && get(key) !== null && get(key) !== "")) snapshots.push({
       ghl_contact_id: c.id,
       closer: text("closer"),
       attendance: text("attendance"),
@@ -79,6 +82,7 @@ export async function fetchCrmPaymentStructures(location: string) {
   });
   return {
     rows,
+    attributionRows,
     snapshots,
     snapshotError: [
       "attendance",

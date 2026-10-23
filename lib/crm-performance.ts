@@ -11,6 +11,8 @@ export function crmPerformance(data: Dataset) {
     const attended = items.filter(
       (r) => normalizeAttendance(r.attendance) === "Attended",
     );
+    const noShow = items.filter((r) => normalizeAttendance(r.attendance) === "No Show").length;
+    const finalized = attended.length + noShow;
     const sold = items.filter((r) => r.outcome.trim().toLowerCase() === "sold");
     const pif = items.filter(
       (r) => normalizeStructure(r.structure) === "Pay in Full (PIF)",
@@ -30,6 +32,9 @@ export function crmPerformance(data: Dataset) {
     return {
       contacts: items.length,
       attended: attended.length,
+      noShow,
+      finalized,
+      showRate: finalized ? attended.length / finalized : null,
       sold: sold.length,
       pif,
       manual,

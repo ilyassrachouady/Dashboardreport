@@ -22,14 +22,9 @@ export async function syncWebinarCohorts(
     if (!counts.tagged_contacts)
       throw new Error("No contacts match the configured webinar tag");
     const stamp = new Date().toISOString();
-    const saved = await db
-      .from("webinars")
-      .update({
-        application_count: counts.application_count,
-        kpi_updated_at: stamp,
-      })
-      .eq("id", w.id);
-    if (saved.error) throw new Error("Could not save CRM webinar counts");
+    // Count persistence belongs to syncBookings, which reconciles applicants and
+    // bookings using the same tag/email cohort in one update. Do not publish an
+    // intermediate tag-only applicant denominator here.
     const audit = await db
       .from("sync_runs")
       .insert({

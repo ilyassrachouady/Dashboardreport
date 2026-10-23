@@ -157,6 +157,8 @@ export async function fetchGhlFieldMap() {
     "trakyo_source",
     "trakyo_campaign",
     "trakyo_content",
+    "trakyo_first_touch",
+    "trakyo_last_touch",
     "application_submitted",
     "appointment_booked_date",
     "payment_structure",

@@ -2,6 +2,7 @@
 import { WhopPaymentHistory } from "./whop-payment-history";
 import { MetricHelp } from "./metric-help";
 import { WhopBalance } from "./whop-balance";
+import { crmPerformance } from "../lib/crm-performance";
 import { crmCloserCash } from "../lib/crm-cash";
 import { useLivePayments } from "./use-live-payments";
 import { matchedContact, reportingPayments } from "../lib/payment-history";
@@ -353,6 +354,9 @@ export default function Dashboard({
   const unmatchedCash = m.paymentRows
     .filter((p) => !p.contact_id)
     .reduce((sum, p) => sum + p.amount, 0);
+  const crmShow = crmPerformance(data);
+  const crmAvailable = data.crmCallSnapshots !== undefined && !data.crmSnapshotError && !data.crmStructuresError;
+  const sourceError = Boolean(data.crmSnapshotError || data.crmStructuresError || data.whopHistoryError || data.whopBalanceError || data.webinars.some(w => w.notion_error));
   const kpis = [
     {
       name: "USD receipts",
@@ -407,33 +411,35 @@ export default function Dashboard({
       action: () => drill(),
     },
     {
-      name: "Recorded attended calls",
-      value: m.attended,
-      detail: "Payment Desk only · incomplete · includes tests",
+      name: "Attended contacts",
+      value: crmAvailable ? crmShow.attended : "—",
+      detail: "Current GHL Attendance field. Each contact once; independent of date/webinar filters.",
       icon: Phone,
-      action: () =>
-        drill(
-          undefined,
-          m.calls
-            .filter((c) => c.attendance === "attended")
-            .map((c) => c.contact_id),
-        ),
+      action: () => setView("Sales"),
     },
     {
-      name: "Recorded agreements",
-      value: m.sales,
-      detail: "Payment Desk only · includes tests",
+      name: "Sold contacts",
+      value: crmAvailable ? crmShow.sold : "—",
+      detail: "Current GHL Call Outcome = Sold. Each contact once; independent of date/webinar filters.",
       icon: CheckCircle2,
       action: () => setView("Sales"),
     },
     {
       name: "Agreed investment",
-      value: usd(m.contract),
-      detail: "Recorded agreements · not cash · includes tests",
+      value: crmAvailable && crmShow.contract !== null ? usd(crmShow.contract) : "—",
+      detail: "GHL Agreed Total Investment on sold contacts. Full contract value, separate from cash; independent of filters.",
       icon: Layers,
       action: () => setView("Sales"),
     },
   ];
+  kpis.push({
+    name: "Show-up rate",
+    value: data.crmCallSnapshots !== undefined && !data.crmSnapshotError && !data.crmStructuresError && crmShow.showRate !== null
+      ? `${(crmShow.showRate * 100).toFixed(1)}%` : "—",
+    detail: `${crmShow.attended} attended / ${crmShow.finalized} finalized GHL attendance records. Cancelled, rescheduled and blank attendance excluded. Each contact counts once; independent of date/webinar filters.`,
+    icon: Phone,
+    action: () => setView("Sales"),
+  });
   const metricTile = (index: number) => {
     const { name, value, detail, icon: Icon, action } = kpis[index];
     return (
@@ -659,8 +665,8 @@ export default function Dashboard({
           </div>
           <div className="topbar-right">
             <span className="mode-label">
-              <span className="status-dot" />
-              {demo ? "Demo mode" : "Live data"}
+              <span className="status-dot" style={sourceError ? { background: "#d58b21" } : undefined} />
+              {demo ? "Demo mode" : sourceError ? "Check data sources" : "Connected data"}
             </span>
             <span className="top-divider" />
             <button
@@ -901,7 +907,7 @@ export default function Dashboard({
                 </button>
               </div>
               <div className="kpi-grid executive-metrics">
-                {[0, 7, 6, 3, 5, 2, 4, 1].map(metricTile)}
+                {[0, 8, 6, 3, 5, 2, 4, 7].map(metricTile)}
               </div>
               {data.whopHistoryError && (
                 <p className="error-banner">{data.whopHistoryError}</p>

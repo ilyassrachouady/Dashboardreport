@@ -155,7 +155,7 @@ export function metrics(data: Dataset, contacts: Contact[], f?: Filters) {
     sales: sales.length,
     contract,
     cash,
-    show: ratio(attended.length, apps.filter((a) => isBooked(a.status)).length),
+    show: ratio(attended.length, calls.filter((c) => ["attended", "no_show", "no-show", "no show"].includes(c.attendance.trim().toLowerCase())).length),
     close: ratio(sales.length, attended.length),
     rpr: ratio(contract, regs.length),
     cpc: ratio(
