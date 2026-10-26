@@ -46,6 +46,7 @@ export function useLivePayments(initial: Dataset, demo: boolean) {
             whopBalanceError: "Live balance refresh failed",
             crmCashError: "Live CRM refresh failed",
             crmAttendanceError: "Live CRM refresh failed",
+            crmApplicationsError: "Live CRM refresh failed",
             crmStructuresError: "Live CRM refresh failed",
           }));
       } finally {

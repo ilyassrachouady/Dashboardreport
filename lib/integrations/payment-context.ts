@@ -14,6 +14,7 @@ export async function fetchCrmPaymentStructures(location: string) {
     ...new Set(
       [
         fields.trakyo_source,
+        fields.application_submitted,
         fields.payment_structure,
         fields.cash_collected,
         fields.attendance,
@@ -35,6 +36,7 @@ export async function fetchCrmPaymentStructures(location: string) {
   if (!fields.payment_structure)
     throw new Error("GHL Payment Structure field is missing");
   const cashRows: { ghl_contact_id: string; cashCents: number | null }[] = [];
+  const applicationRows: NonNullable<Dataset["crmApplications"]> = [];
   const attendanceRows: { ghl_contact_id: string; value: string }[] = [];
   const snapshots: NonNullable<Dataset["crmCallSnapshots"]> = [];
   const attributionRows: NonNullable<Dataset["crmAttribution"]> = [];
@@ -53,6 +55,7 @@ export async function fetchCrmPaymentStructures(location: string) {
       c.customFields?.find((f) => f.id === fields[key])?.value;
     const text = (key: string) =>
       typeof get(key) === "string" ? String(get(key)).trim() : "";
+    applicationRows.push({ghl_contact_id:c.id,applied:text("application_submitted").toLowerCase()==="yes"});
     attributionRows.push({ghl_contact_id:c.id,source:text("trakyo_source"),content:text("trakyo_content"),campaign:text("trakyo_campaign"),firstTouch:text("trakyo_first_touch"),lastTouch:text("trakyo_last_touch")});
     if (["attendance","call_outcome","closer","payment_structure","cash_collected","agreed_total_investment"].some(key => get(key) !== undefined && get(key) !== null && get(key) !== "")) snapshots.push({
       ghl_contact_id: c.id,
@@ -83,6 +86,8 @@ export async function fetchCrmPaymentStructures(location: string) {
   return {
     rows,
     attributionRows,
+    applicationRows: fields.application_submitted ? applicationRows : undefined,
+    applicationError: fields.application_submitted ? null : "GHL Application field is missing",
     snapshots,
     snapshotError: [
       "attendance",

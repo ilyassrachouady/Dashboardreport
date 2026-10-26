@@ -37,6 +37,7 @@ const tables = {
   payments: "payments",
   mappings: "source_mappings",
   syncRuns: "sync_runs",
+  webinarAttendance: "webinar_attendance",
 } as const;
 async function persistSessionCodes(
   db: ReturnType<typeof database>,
@@ -119,6 +120,8 @@ export async function loadDataset(): Promise<{
           data.crmCash = context.cashRows;
           data.crmCallSnapshots = context.snapshots;
           data.crmAttribution = context.attributionRows;
+          data.crmApplications = context.applicationRows;
+          data.crmApplicationsError = context.applicationError;
           data.crmSnapshotError = context.snapshotError;
           data.crmAttendance = context.attendanceRows;
           data.crmAttendanceError = context.attendanceError;

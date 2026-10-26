@@ -21,8 +21,11 @@ export function notionSessionPatch(page: Page) {
  if(peak!==null&&pitch!==null&&pitch>peak)throw Error("Notion pitch attendance exceeds peak attendance.");
  const selected=page.properties.Audience?.multi_select?.map((v:{name:string})=>v.name)||[];
  const status=page.properties.Status?.status?.name;
+ // Notion Date can hold a time range. Date-only values do not prove an end time.
+ const end=page.properties.Date?.date?.end;
+ const endedAt=typeof end==="string" && /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(end) && Number.isFinite(Date.parse(end)) ? new Date(end).toISOString() : null;
  return {
-  peak_attendees:peak,pitch_attendees:pitch,
+  peak_attendees:peak,pitch_attendees:pitch,webinar_ended_at:endedAt,
   slides_url:url("Slides"),replay_url:url("Replay Link"),presenter_url:url("Link for Presenter"),
   notion_page_url:page.url,notion_managed:true,notion_updated_at:page.last_edited_time,notion_error:null,
   promotion_type: (selected.includes("Organic")&&selected.includes("Paid")?"mixed":selected.includes("Organic")?"organic":selected.includes("Paid")?"paid":"unknown") as Webinar["promotion_type"],
@@ -58,7 +61,7 @@ export async function notionWebinars(webinars:Webinar[]):Promise<Webinar[]> {
   });
  }catch(error){
   const message=error instanceof Error?error.message:"Notion refresh failed";
-  return webinars.map(w=>mapping[w.external_id]?{...w,notion_managed:true,notion_error:message,peak_attendees:null,pitch_attendees:null}:w);
+  return webinars.map(w=>mapping[w.external_id]?{...w,notion_managed:true,notion_error:message,peak_attendees:null,pitch_attendees:null,webinar_ended_at:null}:w);
  }
 }
 

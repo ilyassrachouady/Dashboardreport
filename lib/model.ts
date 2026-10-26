@@ -33,6 +33,7 @@ export interface Webinar {
   released_codes?: string | null;
   name: string;
   webinar_date: string;
+  webinar_ended_at?: string | null;
   peak_attendees: number | null;
   pitch_attendees: number | null;
   application_count?: number | null;
@@ -143,6 +144,9 @@ export interface SyncRun {
   error: string | null;
 }
 export interface Dataset {
+  webinarAttendance?: {webinar_id:string;contact_id:string;attended_live:boolean|null;attended_replay:boolean|null}[];
+  crmApplications?: {ghl_contact_id:string;applied:boolean}[];
+  crmApplicationsError?: string | null;
   whopBalance?: {
     totalUsd: string;
     fetchedAt: string;

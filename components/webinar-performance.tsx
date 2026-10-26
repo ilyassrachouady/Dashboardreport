@@ -69,9 +69,14 @@ function exportReport(data: Dataset, webinars: Webinar[]) {
       registrants: k.registrants,
       peak: w.peak_attendees,
       pitch: w.pitch_attendees,
-      applicants: w.application_count ?? null,
-      calls_booked: w.call_booked_count ?? null,
-      applicants_booked: w.applicant_booked_count ?? null,
+      live_attendees: k.conversions.liveAttendees,
+      attendee_applicants: k.conversions.applicants,
+      attendee_calls_booked: k.conversions.booked,
+      calls_first_booked_after_webinar: k.conversions.afterBookings,
+      followup_link_bookings: k.conversions.followupBookings,
+      bookings_without_confirmed_live_attendance: k.conversions.bookingsWithoutLiveAttendance,
+      cohort_calls_booked: w.call_booked_count ?? null,
+      attendee_applicants_booked: k.conversions.applicantsBooked,
       attendance_rate: pct(k.attendance),
       retention_rate: pct(k.retention),
       application_rate: pct(k.application),
@@ -285,19 +290,19 @@ export function WebinarPerformance({
     [
       "Application rate",
       k.application,
-      `${w.application_count ?? "—"} applicants / ${w.pitch_attendees ?? "—"} at pitch`,
-      "Unique applicants as a share of the pitch audience.",
+      `${k.conversions.applicants ?? "—"} attendee applicants / ${k.conversions.liveAttendees ?? "—"} live attendees`,
+      "Confirmed live attendees with GHL Application = Yes / unique live attendees. Current CRM application status; submission timing is not recorded.",
     ],
     [
       "Call booked rate",
       k.booking,
-      `${w.call_booked_count ?? "—"} booked / ${w.pitch_attendees ?? "—"} at pitch`,
-      "Unique booked contacts as a share of the pitch audience.",
+      `${k.conversions.booked ?? "—"} attendee bookings / ${k.conversions.liveAttendees ?? "—"} live attendees`,
+      "Confirmed live attendees with an active session-linked booking created since the webinar began / unique live attendees. Includes attendees who booked later.",
     ],
     [
       "Applicant-to-booking rate",
       k.applicantBooking,
-      `${w.applicant_booked_count ?? "—"} booked applicants / ${w.application_count ?? "—"} applicants`,
+      `${k.conversions.applicantsBooked ?? "—"} booked applicants / ${k.conversions.applicants ?? "—"} attendee applicants`,
       "Only booked contacts with Application = Yes are counted.",
     ],
   ] as const;
@@ -548,16 +553,14 @@ export function WebinarPerformance({
               </details>
               <div className="report-branches">
                 <div>
-                  <span>Applications</span>
-                  <strong>{w.application_count ?? "—"}</strong>
+                  <span>Live attendees who applied</span>
+                  <strong>{k.conversions.applicants ?? "—"}</strong>
                   <small>Application = Yes</small>
                 </div>
                 <div>
-                  <span>Webinar contacts who booked <MetricHelp>Unique contacts linked by this webinar’s GHL tag or an exact email match to its imported registrations, with a booking created after the webinar started. Latest eligible session wins; exact tracked booking evidence can also link the session. Cancelled bookings excluded. This does not prove attendance or a particular booking channel.</MetricHelp></span>
-                  <strong>{w.call_booked_count ?? "—"}</strong>
-                  <small>
-                    {w.applicant_booked_count ?? "—"} from applicants
-                  </small>
+                  <span>Live attendees who booked</span>
+                  <strong>{k.conversions.booked ?? "—"}</strong>
+                  <small>{k.conversions.applicantsBooked ?? "—"} from attendee applicants</small>
                 </div>
               </div>
             </>
@@ -569,11 +572,11 @@ export function WebinarPerformance({
             >
               {[
                 ...stages.map(([name, count]) => ({ name, count })),
-                { name: "Applicants", count: w.application_count },
-                { name: "Calls booked", count: w.call_booked_count },
+                { name: "Attendee applicants", count: k.conversions.applicants },
+                { name: "Attendee bookings", count: k.conversions.booked },
                 {
                   name: "Applicants who booked",
-                  count: w.applicant_booked_count,
+                  count: k.conversions.applicantsBooked,
                 },
               ].map(({ name, count }, i) => (
                 <div className="conversion-bar-row" key={name}>
@@ -610,11 +613,11 @@ export function WebinarPerformance({
                 <tbody>
                   {[
                     ...stages.map(([name, count]) => ({ name, count })),
-                    { name: "Applicants", count: w.application_count },
-                    { name: "Calls booked", count: w.call_booked_count },
+                    { name: "Attendee applicants", count: k.conversions.applicants },
+                    { name: "Attendee bookings", count: k.conversions.booked },
                     {
                       name: "Applicants who booked",
-                      count: w.applicant_booked_count,
+                      count: k.conversions.applicantsBooked,
                     },
                   ].map(({ name, count }, i) => (
                     <tr key={name}>
@@ -634,8 +637,7 @@ export function WebinarPerformance({
             </div>
           )}
           <p className="report-footnote">
-            Applications and calls are separate paths from the pitch audience. A
-            booked call does not imply an application.
+            Application and booking rates use confirmed live attendees. Peak and pitch counts are used only for attendance and retention.
           </p>
         </section>
         <section className="panel">
@@ -690,6 +692,16 @@ export function WebinarPerformance({
           </div>
         </section>
       </div>
+      <section className="panel">
+        <div className="panel-heading"><h3>Bookings after the webinar <MetricHelp>Unique contacts whose first active session-linked booking was created after the verified end time. Attendees can book later too; these are a timing breakdown, not additional bookings to add to attendee totals.</MetricHelp></h3></div>
+        <div className="report-branches">
+          <div><span>Total booked afterwards</span><strong>{k.conversions.afterBookings ?? "—"}</strong></div>
+          <div><span>Confirmed live attendees</span><strong>{k.conversions.afterAttendees ?? "—"}</strong></div>
+          <div><span>Without confirmed live attendance</span><strong>{k.conversions.afterWithoutLiveAttendance ?? "—"}</strong></div>
+        </div>
+        {k.conversions.afterBookings === null && <p className="panel-footnote">Set the actual session end time in the Notion Date range to calculate bookings afterwards.</p>}
+        {Boolean(k.conversions.unlinkedAttendees) && <p className="panel-footnote">{k.conversions.unlinkedAttendees} live attendees have no linked CRM contact; their applications cannot yet be matched.</p>}
+      </section>
       <WebinarCrmAttribution data={data} webinarId={w.id} />
       <details className="panel webinar-admin-tools">
         <summary><span>Session settings & data</span><span>Connections, booking links and attendance import</span></summary>

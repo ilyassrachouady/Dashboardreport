@@ -54,13 +54,23 @@ export async function GET() {
           appointments.push(...page.data);
           if (page.data.length < 1000) break;
         }
-        return { webinars: await notionWebinars(result.data), appointments };
+        const attendance: NonNullable<import("../../../../lib/model").Dataset["webinarAttendance"]> = [];
+        for (let start = 0; ; start += 1000) {
+          const page = await database().from("webinar_attendance").select("*").order("id").range(start,start+999);
+          if (page.error) throw new Error("Webinar attendance refresh failed");
+          attendance.push(...page.data);
+          if (page.data.length < 1000) break;
+        }
+        return { webinars: await notionWebinars(result.data), appointments, attendance };
       })(),
     ]);
     return NextResponse.json(
       {
         webinars: sessions?.webinars,
         appointments: sessions?.appointments,
+        webinarAttendance: sessions?.attendance,
+        crmApplications: crm.value?.applicationRows,
+        crmApplicationsError: crm.error || crm.value?.applicationError || null,
         whopPayments: payments.value,
         whopHistoryError: payments.error,
         whopBalance: balance.value,

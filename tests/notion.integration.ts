@@ -43,3 +43,12 @@ test("booking write-back changes only Calls booked, verifies it, and skips repea
  try{assert.equal((await syncNotionCounts({session:{bookings:25}})).updated,1);assert.equal((await syncNotionCounts({session:{bookings:25}})).updated,0);assert.equal(writes,1);assert.equal(current.properties['Attendees at Peak'].number,72);}
  finally{globalThis.fetch=old;process.env=env;}
 });
+
+test("actual session end comes only from a timestamped Notion Date range",async()=>{
+ const {notionSessionPatch}=await import("../lib/integrations/notion");
+ const base=page();
+ const withEnd=(end:string|null)=>({...base,properties:{...base.properties,Date:{type:"date",date:{start:"2026-10-14T20:00:00-04:00",end}}}});
+ assert.equal(notionSessionPatch(withEnd("2026-10-14T22:00:00-04:00")).webinar_ended_at,"2026-10-15T02:00:00.000Z");
+ assert.equal(notionSessionPatch(withEnd("2026-10-15")).webinar_ended_at,null);
+ assert.equal(notionSessionPatch(withEnd(null)).webinar_ended_at,null);
+});
