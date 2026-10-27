@@ -1,6 +1,7 @@
 "use client";
 import { MetricHelp } from "./metric-help";
-import type { Dataset } from "../lib/model";
+import type { Filters, Dataset } from "../lib/model";
+import { selectContacts } from "../lib/reporting";
 import { crmPerformance } from "../lib/crm-performance";
 import { PaymentWorkspace } from "./payment-workspace";
 import { AcquisitionFunnel } from "./acquisition-funnel";
@@ -15,12 +16,17 @@ const usd = (cents: number | null) =>
       }).format(cents / 100);
 const percent = (value: number | null) =>
   value === null ? "—" : `${(value * 100).toFixed(1)}%`;
-export function WhopPaymentHistory({ data }: { data: Dataset }) {
-  const p = crmPerformance(data),
+export function WhopPaymentHistory({ data, filters }: { data: Dataset; filters?: Filters }) {
+  const p = crmPerformance(data, filters),
     available =
       data.crmCallSnapshots !== undefined &&
       !data.crmStructuresError &&
       !data.crmSnapshotError;
+  const hasFilters=filters && Object.entries(filters).some(([key,value])=>key!=="model" && Boolean(value));
+  const scopeIds=hasFilters ? new Set(selectContacts(data,{...filters!,closer:""}).map(c=>c.ghl_contact_id)) : null;
+  const selectedSnapshots=data.crmCallSnapshots?.filter(r=>(!scopeIds || scopeIds.has(r.ghl_contact_id)) && (!filters?.closer || r.closer===filters.closer));
+  const selectedIds=new Set(selectedSnapshots?.map(r=>r.ghl_contact_id));
+  const attendanceData=hasFilters ? {...data,crmAttendance:data.crmAttendance?.filter(r=>selectedIds.has(r.ghl_contact_id))} : data;
   return (
     <div className="sales-payment-workspace">
       <section className="panel">
@@ -68,6 +74,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
               Sum of GHL Cash Collected · includes first instalments
             </MetricHelp>
           </div>
+          {([["AOV",p.aov,"GHL Cash Collected / Sold contacts"],["Cash per Call",p.cashPerCall,"GHL Cash Collected / Attended contacts"]] as const).map(([label,value,help])=><div className="kpi" key={label}><div className="kpi-label">{label}</div><div className="kpi-value">{available ? usd(value) : "—"}</div><MetricHelp>{help}. Same selected acquisition cohort; current CRM contact snapshots. Includes first instalments once.</MetricHelp></div>)}
         </div>
         {available ? (
           <div className="table-scroll">
@@ -86,6 +93,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
                   <th>Missing plan on sold contacts</th>
                   <th>Agreed investment</th>
                   <th>CRM-reported cash</th>
+                  <th>AOV</th><th>Cash per Call</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,6 +111,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
                     <td>{c.missingPlans}</td>
                     <td>{usd(c.contract)}</td>
                     <td>{usd(c.cash)}</td>
+                    <td>{usd(c.aov)}</td><td>{usd(c.cashPerCall)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -120,8 +129,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
           closer stays Unassigned. PIF share = PIF / (PIF + Manual Payment Plan
           + Financing). Missing or unrecognised structures are excluded, not
           guessed. Close rate = Sold-and-Attended contacts / Attended contacts.
-          Cash is the amount entered in GHL Cash Collected, including first payments on plans; it is not the full agreed investment or a separate verified receipt total. Initial payments are not added a second time. Current contact snapshots are independent of report date/webinar
-          filters and do not represent historical call counts. Whop receipts do
+          Cash is the amount entered in GHL Cash Collected, including first payments on plans; it is not the full agreed investment or a separate verified receipt total. Initial payments are not added a second time. Current contact snapshots follow the selected acquisition cohort and do not represent historical repeat-call counts. Whop receipts do
           not determine any CRM classification.
         </div></details>
         {available && p.missingPlans > 0 && (
@@ -132,7 +140,7 @@ export function WhopPaymentHistory({ data }: { data: Dataset }) {
           </div></details>
         )}
       </section>
-      <CrmAttendance data={data} />
+      <CrmAttendance data={attendanceData} scoped={Boolean(hasFilters)} />
       <AcquisitionFunnel data={data} />
       <PaymentWorkspace data={data} />
     </div>

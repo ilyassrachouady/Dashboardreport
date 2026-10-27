@@ -86,3 +86,17 @@ test("show-up uses finalized GHL attendance only and deduplicates contacts", () 
   assert.equal(p.closers[0].showRate, 2 / 3);
   assert.equal(crmPerformance(emptyDataset()).showRate, null);
 });
+
+test("AOV and Cash per Call use CRM cash, unique denominators and one filtered cohort", () => {
+ const d=emptyDataset();
+ const base={closer:"Brooklyn",attendance:"Attended",outcome:"Sold",structure:"Manual Payment Plan",cashCents:80000,contractCents:240000};
+ d.crmCallSnapshots=[{...base,ghl_contact_id:"one"},{...base,ghl_contact_id:"one"},{...base,ghl_contact_id:"two",cashCents:199700,structure:"Pay in Full (PIF)"},{...base,ghl_contact_id:"three",outcome:"No Sale",cashCents:0}];
+ const p=crmPerformance(d);
+ assert.equal(p.cash,279700);assert.equal(p.aov,139850);assert.equal(p.cashPerCall,279700/3);
+ assert.equal(p.closers[0].aov,p.aov);
+ d.contacts=[{id:"c1",ghl_contact_id:"one",created_at:"2026-10-14T00:00:00Z"},{id:"c2",ghl_contact_id:"two",created_at:"2026-10-15T00:00:00Z"}] as typeof d.contacts;
+ const {defaultFilters}=require("../lib/model");
+ const selected=crmPerformance(d,{...defaultFilters,from:"2026-10-14",to:"2026-10-14"});
+ assert.equal(selected.cash,80000);assert.equal(selected.sold,1);assert.equal(selected.attended,1);assert.equal(selected.aov,80000);assert.equal(selected.cashPerCall,80000);
+ assert.equal(crmPerformance(emptyDataset()).aov,null);assert.equal(crmPerformance(emptyDataset()).cashPerCall,null);
+});

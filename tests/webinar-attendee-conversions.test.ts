@@ -23,7 +23,7 @@ test("rates use the same confirmed live audience; exclude replay, tags, other se
  assert.equal(k.conversions.liveAttendees,2);
  assert.equal(k.conversions.applicants,1);
  assert.equal(k.conversions.booked,1);
- assert.equal(k.application,.5);
+ assert.equal(k.application,1);
  assert.equal(k.booking,.5);
  assert.equal(k.applicantBooking,1);
  assert.equal(k.conversions.bookingsWithoutLiveAttendance,1);
@@ -47,4 +47,12 @@ test("missing or invalid end time stays unknown; follow-up links never establish
  assert.equal(webinarKpis(d,{...w,webinar_ended_at:null}).conversions.afterBookings,null);
  assert.equal(webinarKpis(d,{...w,webinar_ended_at:"2026-10-14T18:00:00Z"}).conversions.afterBookings,null);
  assert.equal(webinarKpis(d,w).conversions.followupBookings,1);
+});
+
+test("application rate uses pitch attendance, stays unknown without it, and rejects impossible subsets",()=>{
+ const d=fixture();
+ assert.equal(webinarKpis(d,{...w,pitch_attendees:2}).application,.5);
+ assert.equal(webinarKpis(d,{...w,pitch_attendees:null}).application,null);
+ assert.equal(webinarKpis(d,{...w,pitch_attendees:0}).application,null);
+ assert.equal(webinarKpis(d,{...w,pitch_attendees:null}).booking,.5);
 });

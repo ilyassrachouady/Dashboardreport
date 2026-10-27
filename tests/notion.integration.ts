@@ -52,3 +52,18 @@ test("actual session end comes only from a timestamped Notion Date range",async(
  assert.equal(notionSessionPatch(withEnd("2026-10-15")).webinar_ended_at,null);
  assert.equal(notionSessionPatch(withEnd(null)).webinar_ended_at,null);
 });
+
+test("Start Date and separate End Time override legacy Date range and reject invalid ordering",async()=>{
+ const {notionSessionPatch}=await import("../lib/integrations/notion");
+ const current={...page(),properties:{...page().properties,"Start Date":{type:"date",date:{start:"2026-10-14T20:00:00-04:00"}},"End Time":{type:"date",date:{start:"2026-10-14T22:00:00-04:00"}},Date:{type:"date",date:{start:"2026-01-01T00:00:00Z",end:"2026-01-02T00:00:00Z"}}}};
+ const p=notionSessionPatch(current);assert.equal(p.webinar_date,"2026-10-15T00:00:00.000Z");assert.equal(p.webinar_ended_at,"2026-10-15T02:00:00.000Z");
+ current.properties['End Time'].date.start="2026-10-14T19:00:00-04:00";
+ assert.throws(()=>notionSessionPatch(current),/later/);
+ assert.throws(()=>notionSessionPatch({...current,properties:{...current.properties,"End Time":{type:"formula",formula:{type:"string",string:"date120"}}}}),/return a date/);
+});
+
+test("End Time dateAdd formula is read as a timestamp, including day rollover",async()=>{
+ const {notionSessionPatch}=await import("../lib/integrations/notion");
+ const current={...page(),properties:{...page().properties,"Start Date":{type:"date",date:{start:"2026-10-14T23:00:00-04:00"}},"End Time":{type:"formula",formula:{type:"date",date:{start:"2026-10-15T01:00:00-04:00",end:null}}}}};
+ const p=notionSessionPatch(current);assert.equal(Date.parse(p.webinar_ended_at!)-Date.parse(p.webinar_date!),2*60*60*1000);
+});

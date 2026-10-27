@@ -10,6 +10,7 @@ export function webinarKpis(data: Dataset, w: Webinar) {
   const issues: string[] = [];
   if (w.peak_attendees != null && w.peak_attendees > registrants) issues.push("Peak audience exceeds imported registrants");
   if (w.pitch_attendees != null && w.peak_attendees != null && w.pitch_attendees > w.peak_attendees) issues.push("Pitch audience exceeds peak audience");
+  if (conversions.applicants != null && w.pitch_attendees != null && conversions.applicants > w.pitch_attendees) issues.push("Attendee applicants exceed pitch audience");
   const divide = (
     a: number | null | undefined,
     b: number | null | undefined,
@@ -20,7 +21,7 @@ export function webinarKpis(data: Dataset, w: Webinar) {
     issues,
     attendance: w.peak_attendees != null && w.peak_attendees > registrants ? null : divide(w.peak_attendees, registrants),
     retention: w.pitch_attendees != null && w.peak_attendees != null && w.pitch_attendees > w.peak_attendees ? null : divide(w.pitch_attendees, w.peak_attendees),
-    application: divide(conversions.applicants, conversions.liveAttendees),
+    application: conversions.applicants != null && w.pitch_attendees != null && conversions.applicants > w.pitch_attendees ? null : divide(conversions.applicants, w.pitch_attendees),
     booking: divide(conversions.booked, conversions.liveAttendees),
     applicantBooking: divide(conversions.applicantsBooked, conversions.applicants),
   };

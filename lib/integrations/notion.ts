@@ -21,10 +21,18 @@ export function notionSessionPatch(page: Page) {
  if(peak!==null&&pitch!==null&&pitch>peak)throw Error("Notion pitch attendance exceeds peak attendance.");
  const selected=page.properties.Audience?.multi_select?.map((v:{name:string})=>v.name)||[];
  const status=page.properties.Status?.status?.name;
- // Notion Date can hold a time range. Date-only values do not prove an end time.
- const end=page.properties.Date?.date?.end;
- const endedAt=typeof end==="string" && /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(end) && Number.isFinite(Date.parse(end)) ? new Date(end).toISOString() : null;
+ // Start Date is the canonical name; Date remains compatible with older workspaces.
+ const startProperty=page.properties["Start Date"] ?? page.properties.Date;
+ const endProperty=page.properties["End Time"];
+ const timestamp=(value:unknown)=>typeof value==="string" && /T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
+ const startsAt=timestamp(startProperty?.date?.start);
+ if(endProperty && endProperty.type!=="date" && endProperty.type!=="formula")throw Error("Notion End Time must return a date and time.");
+ if(endProperty?.type==="formula" && endProperty.formula?.type!=="date")throw Error("Notion End Time formula must return a date, using dateAdd(Start Date, 2, hours).");
+ const endValue=endProperty?.type==="formula" ? endProperty.formula?.date?.start : endProperty?.date?.start;
+ const endedAt=timestamp(endProperty ? endValue : startProperty?.date?.end);
+ if(endedAt && startsAt && Date.parse(endedAt)<=Date.parse(startsAt))throw Error("Notion End Time must be later than Start Date.");
  return {
+  ...(startsAt ? {webinar_date:startsAt} : {}),
   peak_attendees:peak,pitch_attendees:pitch,webinar_ended_at:endedAt,
   slides_url:url("Slides"),replay_url:url("Replay Link"),presenter_url:url("Link for Presenter"),
   notion_page_url:page.url,notion_managed:true,notion_updated_at:page.last_edited_time,notion_error:null,
@@ -105,7 +113,7 @@ export async function notionEventChoices() {
  for(let i=0;i<100;i++){
   const r=await request(`data_sources/${sources[0].id}/query`,{page_size:100,...(cursor?{start_cursor:cursor}:{})});
   pages.push(...z.array(pageSchema).parse(r.results));
-  if(!r.has_more)return pages.map(p=>({id:p.id,url:p.url,name:(p.properties.Name?.title||[]).map((t:{plain_text:string})=>t.plain_text).join("")||"Untitled event",date:p.properties.Date?.date?.start||null}));
+  if(!r.has_more)return pages.map(p=>({id:p.id,url:p.url,name:(p.properties.Name?.title||[]).map((t:{plain_text:string})=>t.plain_text).join("")||"Untitled event",date:(p.properties["Start Date"]??p.properties.Date)?.date?.start||null}));
   const next=z.string().parse(r.next_cursor);if(next===cursor)throw Error("Notion pagination repeated");cursor=next;
  }
  throw Error("Notion event list exceeded the safe page limit.");

@@ -354,7 +354,7 @@ export default function Dashboard({
   const unmatchedCash = m.paymentRows
     .filter((p) => !p.contact_id)
     .reduce((sum, p) => sum + p.amount, 0);
-  const crmShow = crmPerformance(data);
+  const crmShow = crmPerformance(data, activeFilters);
   const crmAvailable = data.crmCallSnapshots !== undefined && !data.crmSnapshotError && !data.crmStructuresError;
   const sourceError = Boolean(data.crmSnapshotError || data.crmStructuresError || data.whopHistoryError || data.whopBalanceError || data.webinars.some(w => w.notion_error));
   const kpis = [
@@ -413,21 +413,21 @@ export default function Dashboard({
     {
       name: "Attended contacts",
       value: crmAvailable ? crmShow.attended : "—",
-      detail: "Current GHL Attendance field. Each contact once; independent of date/webinar filters.",
+      detail: "Current GHL Attendance field. Each contact once; selected acquisition cohort.",
       icon: Phone,
       action: () => setView("Sales"),
     },
     {
       name: "Sold contacts",
       value: crmAvailable ? crmShow.sold : "—",
-      detail: "Current GHL Call Outcome = Sold. Each contact once; independent of date/webinar filters.",
+      detail: "Current GHL Call Outcome = Sold. Each contact once; selected acquisition cohort.",
       icon: CheckCircle2,
       action: () => setView("Sales"),
     },
     {
       name: "Agreed investment",
       value: crmAvailable && crmShow.contract !== null ? usd(crmShow.contract) : "—",
-      detail: "GHL Agreed Total Investment on sold contacts. Full contract value, separate from cash; independent of filters.",
+      detail: "GHL Agreed Total Investment on sold contacts. Full contract value, separate from cash; selected acquisition cohort.",
       icon: Layers,
       action: () => setView("Sales"),
     },
@@ -436,10 +436,15 @@ export default function Dashboard({
     name: "Show-up rate",
     value: data.crmCallSnapshots !== undefined && !data.crmSnapshotError && !data.crmStructuresError && crmShow.showRate !== null
       ? `${(crmShow.showRate * 100).toFixed(1)}%` : "—",
-    detail: `${crmShow.attended} attended / ${crmShow.finalized} finalized GHL attendance records. Cancelled, rescheduled and blank attendance excluded. Each contact counts once; independent of date/webinar filters.`,
+    detail: `${crmShow.attended} attended / ${crmShow.finalized} finalized GHL attendance records. Cancelled, rescheduled and blank attendance excluded. Each contact counts once; selected acquisition cohort.`,
     icon: Phone,
     action: () => setView("Sales"),
   });
+  for (const [name,value,detail] of [
+    ["Cash collected · GHL", crmShow.cash, "Sum of the selected contacts’ GHL Cash Collected field, including first instalments."],
+    ["AOV", crmShow.aov, "GHL Cash Collected / unique Sold contacts in the selected acquisition cohort."],
+    ["Cash per Call", crmShow.cashPerCall, "GHL Cash Collected / unique Attended contacts in the selected acquisition cohort. GHL stores latest contact attendance, not repeat-call history."],
+  ] as const) kpis.push({name,value:crmAvailable && value !== null ? new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2}).format(value/100) : "—",detail,icon:Layers,action:()=>setView("Sales")});
   const metricTile = (index: number) => {
     const { name, value, detail, icon: Icon, action } = kpis[index];
     return (
@@ -447,7 +452,7 @@ export default function Dashboard({
         <button className="metric-card-action" onClick={action}>
           <span className="kpi-label">{name}<Icon size={15} aria-hidden="true" /></span>
           <span className="kpi-value">{typeof value === "number" ? value.toLocaleString("en-US") : value}</span>
-          <span className="metric-card-source">{[0, 1].includes(index) ? "Whop" : [5, 6, 7].includes(index) ? "Payment Desk" : index === 2 ? "WebinarJam" : "GHL"}<ArrowUpRight size={13} aria-hidden="true" /></span>
+          <span className="metric-card-source">{[0, 1].includes(index) ? "Whop" : [5, 6, 7, 9, 10, 11].includes(index) ? "GHL" : index === 2 ? "WebinarJam" : "GHL"}<ArrowUpRight size={13} aria-hidden="true" /></span>
         </button>
         <MetricHelp label={`${name}: definition`}>{detail}</MetricHelp>
       </div>
@@ -777,17 +782,21 @@ export default function Dashboard({
               />
             </div>
             <SelectControl
-              aria-label="Webinar"
+              aria-label="Webinar session"
               value={filters.webinar}
               onValueChange={(value) => update("webinar", value)}
             >
-              <option value="">All webinars</option>
-              {data.webinars.map((w) => (
+              <option value="">All webinar sessions</option>
+              {[...new Map(data.webinars.map(w => [w.id,w])).values()].sort((a,b)=>b.webinar_date.localeCompare(a.webinar_date)).map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.name}
+                  {[w.session_code, new Date(w.webinar_date).toLocaleDateString("en-GB", {timeZone:"UTC"}), w.name].filter(Boolean).join(" · ")}
                 </option>
               ))}
             </SelectControl>
+            {view === "Sales" && <SelectControl aria-label="Recorded offer" value={filters.offer} onValueChange={value=>update("offer",value)}>
+              <option value="">All recorded offers</option>
+              {[...new Set(data.sales.map(s=>s.offer.trim()).filter(Boolean))].sort().map(offer=><option key={offer} value={offer}>{offer}</option>)}
+            </SelectControl>}
             <SelectControl
               aria-label="Attribution model"
               value={filters.model}
@@ -833,7 +842,7 @@ export default function Dashboard({
                   "closer",
                   "offer",
                 ] as const
-              ).map((key) => {
+              ).filter(key => view !== "Sales" || key !== "offer").map((key) => {
                 const options =
                   key === "closer"
                     ? [...new Set(data.calls.map((c) => c.closer))]
@@ -907,7 +916,7 @@ export default function Dashboard({
                 </button>
               </div>
               <div className="kpi-grid executive-metrics">
-                {[0, 8, 6, 3, 5, 2, 4, 7].map(metricTile)}
+                {[9, 10, 11, 8, 6, 5, 3, 2, 4, 7].map(metricTile)}
               </div>
               {data.whopHistoryError && (
                 <p className="error-banner">{data.whopHistoryError}</p>
@@ -1178,7 +1187,7 @@ export default function Dashboard({
           {view === "Sales" && (
             <>
               <div id="sales-payments" className="overview-section">
-                <WhopPaymentHistory data={data} />
+                <WhopPaymentHistory data={data} filters={activeFilters} />
               </div>
               <div id="sales-agreements" className="overview-section">
                 <Panel

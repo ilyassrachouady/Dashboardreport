@@ -1,5 +1,5 @@
 import "server-only";
-import { syncNotionCounts } from "./integrations/notion";
+import { notionWebinars, syncNotionCounts } from "./integrations/notion";
 import { fetchBookingSources } from "./integrations/booking-sources";
 import { matchBookingSource } from "./booking-source";
 import { database } from "./db";
@@ -19,7 +19,8 @@ export async function syncBookings(
     .from("webinars")
     .select("*");
   if (webinars.error) throw new Error("Cannot load webinar sessions");
-  const sessions = webinars.data;
+  const sessions = await notionWebinars(webinars.data);
+  if (sessions.some(w => w.notion_error)) throw new Error("Notion session timing could not be verified");
   const start =
     Math.min(
       Date.now() - 90 * 86400000,

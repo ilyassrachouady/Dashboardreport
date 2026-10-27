@@ -1,10 +1,13 @@
-import type { Dataset } from "./model";
+import { selectContacts } from "./reporting";
+import type { Filters, Dataset } from "./model";
 import { normalizeStructure } from "./payment-analytics";
 import { normalizeAttendance } from "./crm-attendance";
-export function crmPerformance(data: Dataset) {
+export function crmPerformance(data: Dataset, filters?: Filters) {
+  const filtered = filters && Object.entries(filters).some(([key,value]) => key !== "model" && Boolean(value));
+  const selected = filtered ? new Set(selectContacts(data, {...filters!, closer:""}).map(c => c.ghl_contact_id).filter(Boolean)) : null;
   const rows = [
     ...new Map(
-      (data.crmCallSnapshots || []).map((r) => [r.ghl_contact_id, r]),
+      (data.crmCallSnapshots || []).filter(r => (!selected || selected.has(r.ghl_contact_id)) && (!filters?.closer || r.closer === filters.closer)).map((r) => [r.ghl_contact_id, r]),
     ).values(),
   ];
   const summarize = (items: typeof rows) => {
@@ -49,6 +52,8 @@ export function crmPerformance(data: Dataset) {
             .length / attended.length
         : null,
       cash,
+      aov: cash !== null && sold.length > 0 ? cash / sold.length : null,
+      cashPerCall: cash !== null && attended.length > 0 ? cash / attended.length : null,
       cashContacts: cashRows.length,
       contract: contracts.length
         ? contracts.reduce((s, r) => s + r.contractCents!, 0)

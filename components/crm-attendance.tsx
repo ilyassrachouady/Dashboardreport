@@ -3,7 +3,7 @@ import { MetricHelp } from "./metric-help";
 import { useState } from "react";
 import type { Dataset } from "../lib/model";
 import { attendanceStatuses, crmAttendanceRows } from "../lib/crm-attendance";
-export function CrmAttendance({ data }: { data: Dataset }) {
+export function CrmAttendance({ data, scoped=false }: { data: Dataset; scoped?: boolean }) {
   const [filter, setFilter] = useState("All");
   const rows = crmAttendanceRows(data),
     filtered = rows.filter((r) => filter === "All" || r.status === filter);
@@ -13,7 +13,7 @@ export function CrmAttendance({ data }: { data: Dataset }) {
       <div className="panel-head">
         <div>
           <h2>Attendance · GHL</h2>
-          <MetricHelp label="Attendance scope">Current contact status in GHL. Company-wide; date and webinar filters do not apply.</MetricHelp>
+          <MetricHelp label="Attendance scope">Current contact status in GHL. {scoped ? "Selected acquisition cohort." : "All CRM contacts."} Each contact counts once.</MetricHelp>
         </div>
         <button className="secondary" onClick={() => setFilter("All")}>
           Show all contacts

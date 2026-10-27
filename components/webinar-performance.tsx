@@ -1,4 +1,6 @@
 "use client";
+import { sessionCrmMetrics } from "../lib/session-comparison";
+import { usd } from "../lib/reporting";
 import { WebinarCrmAttribution } from "./webinar-crm-attribution";
 import { MetricHelp } from "./metric-help";
 import { WebinarBookingLinks } from "./webinar-booking-links";
@@ -176,11 +178,11 @@ export function WebinarReports({
             <div>
               <h2>Session comparison</h2>
               <p>
-                Same five definitions across every webinar. Select a row to
-                explore.
+                Compare audience, conversions and CRM results. Select a row to explore.
               </p>
             </div>
           </div>
+          <MetricHelp label="Session sales scope">CRM sales and cash are current values for each session’s registered contacts, not proof the webinar caused the sale. A contact registered for multiple sessions appears in each cohort; do not sum these columns across sessions. PIF share uses sold contacts with a recognised structure.</MetricHelp>
           <SessionComparisonChart data={data} webinars={webinars} />
           <div className="table-scroll report-compare">
             <table>
@@ -194,6 +196,7 @@ export function WebinarReports({
                     "Application",
                     "Call booked",
                     "Applicant → booking",
+                    "At pitch", "Attendee applicants", "Sold · CRM cohort", "PIF sold", "PIF share", "Cash · CRM cohort",
                   ].map((h) => (
                     <th key={h}>{h}</th>
                   ))}
@@ -202,6 +205,7 @@ export function WebinarReports({
               <tbody>
                 {webinars.map((s) => {
                   const k = webinarKpis(data, s);
+                  const crm = sessionCrmMetrics(data,s);
                   return (
                     <tr key={s.id}>
                       <td>
@@ -230,6 +234,7 @@ export function WebinarReports({
                       ].map((v, i) => (
                         <td key={i}>{pct(v)}</td>
                       ))}
+                      <td>{s.pitch_attendees ?? "—"}</td><td>{k.conversions.applicants ?? "—"}</td><td>{crm.sold ?? "—"}</td><td>{crm.pif ?? "—"}</td><td>{pct(crm.pifRate)}</td><td>{crm.cash === null ? "—" : usd(crm.cash)}</td>
                     </tr>
                   );
                 })}
@@ -290,8 +295,8 @@ export function WebinarPerformance({
     [
       "Application rate",
       k.application,
-      `${k.conversions.applicants ?? "—"} attendee applicants / ${k.conversions.liveAttendees ?? "—"} live attendees`,
-      "Confirmed live attendees with GHL Application = Yes / unique live attendees. Current CRM application status; submission timing is not recorded.",
+      `${k.conversions.applicants ?? "—"} attendee applicants / ${w.pitch_attendees ?? "—"} at pitch`,
+      "Confirmed live attendees with GHL Application = Yes / people present at the pitch. Attendance does not prove presence at the pitch. Current CRM application status; submission timing is not recorded.",
     ],
     [
       "Call booked rate",
@@ -637,7 +642,7 @@ export function WebinarPerformance({
             </div>
           )}
           <p className="report-footnote">
-            Application and booking rates use confirmed live attendees. Peak and pitch counts are used only for attendance and retention.
+            Application rate uses people at pitch. Call booked rate uses confirmed live attendees. Both numerators exclude contacts without confirmed live attendance.
           </p>
         </section>
         <section className="panel">
@@ -693,13 +698,13 @@ export function WebinarPerformance({
         </section>
       </div>
       <section className="panel">
-        <div className="panel-heading"><h3>Bookings after the webinar <MetricHelp>Unique contacts whose first active session-linked booking was created after the verified end time. Attendees can book later too; these are a timing breakdown, not additional bookings to add to attendee totals.</MetricHelp></h3></div>
+        <div className="panel-heading"><h3>Bookings after the webinar window <MetricHelp>Unique contacts whose first active session-linked booking was created after Notion’s End Time (Start Date + 2 hours). Attendees can book later too; these are a timing breakdown, not additional bookings to add to attendee totals.</MetricHelp></h3></div>
         <div className="report-branches">
           <div><span>Total booked afterwards</span><strong>{k.conversions.afterBookings ?? "—"}</strong></div>
           <div><span>Confirmed live attendees</span><strong>{k.conversions.afterAttendees ?? "—"}</strong></div>
           <div><span>Without confirmed live attendance</span><strong>{k.conversions.afterWithoutLiveAttendance ?? "—"}</strong></div>
         </div>
-        {k.conversions.afterBookings === null && <p className="panel-footnote">Set the actual session end time in the Notion Date range to calculate bookings afterwards.</p>}
+        {k.conversions.afterBookings === null && <p className="panel-footnote">Bookings afterwards use Notion End Time: Start Date + 2 hours.</p>}
         {Boolean(k.conversions.unlinkedAttendees) && <p className="panel-footnote">{k.conversions.unlinkedAttendees} live attendees have no linked CRM contact; their applications cannot yet be matched.</p>}
       </section>
       <WebinarCrmAttribution data={data} webinarId={w.id} />
