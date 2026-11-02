@@ -13,6 +13,7 @@ import { adaptGhlContact } from "./integrations/ghl";
 export async function syncBookings(
   contacts: unknown[],
   fields: Record<string, string>,
+  onlyWebinarId?: string,
 ) {
   const db = database();
   const webinars = await db
@@ -110,7 +111,7 @@ export async function syncBookings(
       closer: e.assignedUserId || "",
       webinar_id: source?.webinar_id ?? bookingWebinar(e, person.tags || [], sessions, map, [...(registeredSessions.get(person.email?.trim().toLowerCase() || "") || [])]),
     };
-  });
+  }).filter(row => !onlyWebinarId || row.webinar_id === onlyWebinarId);
   // Save only after the complete provider snapshot has validated. Stable appointment IDs make reruns safe.
   if (rows.length) {
     for (let offset = 0; offset < rows.length; offset += 100) {
@@ -142,6 +143,7 @@ export async function syncBookings(
   const now = new Date().toISOString();
   const notionCounts: Record<string,{bookings:number}> = {};
   for (const session of sessions) {
+    if (onlyWebinarId && session.id !== onlyWebinarId) continue;
     if (!map[session.external_id] && ![...registeredSessions.values()].some(ids => ids.has(session.id))) continue;
     const booked = new Set(
       rows

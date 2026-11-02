@@ -173,6 +173,22 @@ export async function discoverWebinars() {
     .filter(w=>!/^right now$/i.test(w.type)).map(w=>String(w.webinar_id));
 }
 
+// A reschedule can leave a registrant's schedule_id pointing at an older
+// occurrence. Only an explicit event timestamp matching one unique schedule
+// permits reassignment; never infer the occurrence from the signup date.
+export function reconcileRegistrantSchedules(details: z.infer<typeof webinar>, rows: unknown[]) {
+  return rows.map(raw => {
+    const r = registrant.parse(raw);
+    if (!r.event) return raw;
+    const eventAt = webinarTimestamp(r.event, details.timezone);
+    const current = details.schedules.find(s => String(s.schedule) === String(r.schedule_id));
+    if (current && webinarTimestamp(current.date, details.timezone) === eventAt) return raw;
+    const matches = details.schedules.filter(s => webinarTimestamp(s.date, details.timezone) === eventAt);
+    if (matches.length !== 1) throw Error("Registrant event date has no unique WebinarJam schedule; session identity needs review");
+    return { ...(raw as Record<string, unknown>), schedule_id: matches[0].schedule };
+  });
+}
+
 export function scheduledSessionRows(details: z.infer<typeof webinar>, rows: unknown[]) {
   const registrations=rows.map(r=>registrant.parse(r));
   return details.schedules.map(schedule=>{

@@ -13,6 +13,7 @@ import {
   discoverWebinars,
   scheduledSessionRows,
   reconcileScheduledSession,
+  reconcileRegistrantSchedules,
 } from "./integrations/webinars";
 import { database } from "./db";
 import { assignMissingSessionCodes } from "./session-code";
@@ -66,7 +67,8 @@ export async function runSync(source: "ghl" | "whop" | "trakyo" | "webinars") {
     } else if (source === "webinars") {
       const ids=await discoverWebinars();
       for(const webinarId of ids){
-        const {details,registrants}=await fetchWebinarRegistrants(webinarId);
+        const {details,registrants:providerRegistrants}=await fetchWebinarRegistrants(webinarId);
+        const registrants=reconcileRegistrantSchedules(details,providerRegistrants);
         const sessionRows=scheduledSessionRows(details,registrants);
         const canonical=new Map<string,string>();
         for(const row of sessionRows){
