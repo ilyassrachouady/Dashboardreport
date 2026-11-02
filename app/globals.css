@@ -2112,6 +2112,7 @@ footer { border-color:var(--border); color:#71717a; font-size:10px; }
 .report-action p { color:#80675c;font-size:12px;margin-top:4px;line-height:1.5; }
 .report-action .button { margin-left:auto;background:#fff;flex-shrink:0; }
 .report-kpi-cards { display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:24px; }
+.report-kpi-cards-four { grid-template-columns:repeat(4,minmax(0,1fr)); }
 .report-kpi { display:block;text-align:left;padding:17px 18px 13px;background:#fff;border:1px solid var(--border);border-radius:5px;min-width:0; }
 .report-kpi:hover { border-color:#ffa48f;box-shadow:0 2px 8px #ff553909; }
 .report-kpi-top { display:flex;justify-content:space-between;color:#a1a1aa;font-size:10px;letter-spacing:.5px;margin-bottom:15px; }

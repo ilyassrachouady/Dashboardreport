@@ -24,7 +24,7 @@ test("rates use the same confirmed live audience; exclude replay, tags, other se
  assert.equal(k.conversions.applicants,1);
  assert.equal(k.conversions.booked,1);
  assert.equal(k.application,1);
- assert.equal(k.booking,.5);
+ assert.equal(k.booking,1);
  assert.equal(k.applicantBooking,1);
  assert.equal(k.conversions.bookingsWithoutLiveAttendance,1);
  // A repeat booking does not turn an existing during-webinar booking into a new later conversion.
@@ -40,7 +40,7 @@ test("missing evidence, upcoming sessions and failed CRM refresh do not manufact
  d.webinarAttendance=fixture().webinarAttendance;
  d.crmApplicationsError="Refresh failed";
  assert.equal(webinarKpis(d,w).application,null);
- assert.equal(webinarKpis(d,w).booking,.5);
+ assert.equal(webinarKpis(d,w).booking,1);
 });
 test("missing or invalid end time stays unknown; follow-up links never establish elapsed time",()=>{
  const d=fixture();d.appointments[2].booking_source="followup";
@@ -54,5 +54,28 @@ test("application rate uses pitch attendance, stays unknown without it, and reje
  assert.equal(webinarKpis(d,{...w,pitch_attendees:2}).application,.5);
  assert.equal(webinarKpis(d,{...w,pitch_attendees:null}).application,null);
  assert.equal(webinarKpis(d,{...w,pitch_attendees:0}).application,null);
- assert.equal(webinarKpis(d,{...w,pitch_attendees:null}).booking,.5);
+ assert.equal(webinarKpis(d,{...w,pitch_attendees:null}).booking,null);
+});
+
+test("call booked rate uses people at pitch and never substitutes live, peak or aggregate bookings",()=>{
+ const d=fixture();
+ assert.equal(webinarKpis(d,{...w,pitch_attendees:2}).booking,.5);
+ assert.equal(webinarKpis(d,{...w,pitch_attendees:0}).booking,null);
+ const k=webinarKpis(d,{...w,pitch_attendees:0});
+ assert.ok(k.issues.includes("Attendee bookings exceed pitch audience"));
+ const sixtyTwo={...w,pitch_attendees:62,peak_attendees:72};
+ assert.equal(webinarKpis(d,sixtyTwo).booking,1/62);
+});
+
+test("TCS002 omits application rate while retaining applicant counts and pitch-based bookings",()=>{
+ const d=fixture();
+ const session={...w,session_code:'TCS002',pitch_attendees:58};
+ const k=webinarKpis(d,session);
+ assert.equal(k.showApplicationRate,false);
+ assert.equal(k.application,null);
+ assert.equal(k.conversions.applicants,1);
+ assert.equal(k.booking,1/58);
+ assert.equal(webinarKpis(d,{...w,external_id:'webinarjam:2:5:5'}).showApplicationRate,false);
+ assert.equal(webinarKpis(d,{...w,session_code:'TCS001'}).showApplicationRate,true);
+ assert.equal(webinarKpis(d,{...w,session_code:'QUE001'}).application,1);
 });

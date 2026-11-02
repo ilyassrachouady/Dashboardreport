@@ -81,7 +81,7 @@ function exportReport(data: Dataset, webinars: Webinar[]) {
       attendee_applicants_booked: k.conversions.applicantsBooked,
       attendance_rate: pct(k.attendance),
       retention_rate: pct(k.retention),
-      application_rate: pct(k.application),
+      ...(webinars.length > 1 || k.showApplicationRate ? { application_rate: pct(k.application) } : {}),
       call_booked_rate: pct(k.booking),
       applicant_booking_rate: pct(k.applicantBooking),
     };
@@ -301,8 +301,8 @@ export function WebinarPerformance({
     [
       "Call booked rate",
       k.booking,
-      `${k.conversions.booked ?? "—"} attendee bookings / ${k.conversions.liveAttendees ?? "—"} live attendees`,
-      "Confirmed live attendees with an active session-linked booking created since the webinar began / unique live attendees. Includes attendees who booked later.",
+      `${k.conversions.booked ?? "—"} attendee bookings / ${w.pitch_attendees ?? "—"} at pitch`,
+      "Confirmed live attendees with an active session-linked booking created since the webinar began / people present at the pitch. Includes attendees who booked later; attendance does not prove they were present at the pitch.",
     ],
     [
       "Applicant-to-booking rate",
@@ -311,6 +311,7 @@ export function WebinarPerformance({
       "Only booked contacts with Application = Yes are counted.",
     ],
   ] as const;
+  const visibleCards = cards.filter(([name]) => name !== "Application rate" || k.showApplicationRate);
   const registrants = new Set(
     data.registrations
       .filter((r) => r.webinar_id === w.id)
@@ -474,8 +475,8 @@ export function WebinarPerformance({
         <h3>Webinar conversion rates</h3>
 
       </div>
-      <div className="report-kpi-cards">
-        {cards.map(([name, value, formula, description], i) => (
+      <div className={`report-kpi-cards${visibleCards.length === 4 ? " report-kpi-cards-four" : ""}`}>
+        {visibleCards.map(([name, value, formula, description], i) => (
           <button
             key={name}
             className={`report-kpi ${value === null ? "pending" : ""}`}
@@ -642,7 +643,7 @@ export function WebinarPerformance({
             </div>
           )}
           <p className="report-footnote">
-            Application rate uses people at pitch. Call booked rate uses confirmed live attendees. Both numerators exclude contacts without confirmed live attendance.
+            Application and call booked rates use people at pitch. Both numerators exclude contacts without confirmed live attendance.
           </p>
         </section>
         <section className="panel">
