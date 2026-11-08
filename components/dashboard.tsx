@@ -1,4 +1,5 @@
 "use client";
+import { ClientSwitcher } from "./client-switcher";
 import { WhopPaymentHistory } from "./whop-payment-history";
 import { MetricHelp } from "./metric-help";
 import { WhopBalance } from "./whop-balance";
@@ -593,13 +594,7 @@ export default function Dashboard({
             <span className="brand-caption">REVENUE INTELLIGENCE</span>
           </span>
         </a>
-        <button className="workspace">
-          <span className="workspace-icon">CS</span>
-          <span>
-            Creator Society<small>Internal workspace</small>
-          </span>
-          <ChevronDown size={14} />
-        </button>
+        <ClientSwitcher client="tcs" />
         <div className="nav-label">WORKSPACE</div>
         <nav>
           {NAV.map(([name, Icon]) => (

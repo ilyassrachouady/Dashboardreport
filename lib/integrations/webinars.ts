@@ -105,12 +105,13 @@ export function adaptWebinars(payload: unknown) {
   if (e.provider !== "webinars") throw new Error("Provider mismatch");
   return e;
 }
-async function request(path: string, params: Record<string, string> = {}) {
-  if (!process.env.WEBINARJAM_API_KEY)
+async function request(path: string, params: Record<string, string> = {}, apiKey = process.env.WEBINARJAM_API_KEY) {
+  if (!apiKey)
     throw new Error("Configure WebinarJam key and webinar ID");
   const r = await fetch(`https://api.webinarjam.com/webinarjam/${path}`, {
     method: "POST",
-    body: new URLSearchParams({ api_key: process.env.WEBINARJAM_API_KEY, ...params }),
+    body: new URLSearchParams({ api_key: apiKey, ...params }),
+    cache: "no-store",
     signal: AbortSignal.timeout(30000),
   });
   if (!r.ok) throw new Error(`WebinarJam read failed (${r.status})`);
@@ -128,9 +129,9 @@ export function verifyRegistrantPages(rows: unknown[], total: number) {
   if (new Set(ids).size !== ids.length)
     throw new Error("Duplicate WebinarJam registration IDs across pages");
 }
-export async function fetchWebinarRegistrants(webinarId = process.env.WEBINARJAM_WEBINAR_ID) {
+export async function fetchWebinarRegistrants(webinarId = process.env.WEBINARJAM_WEBINAR_ID, apiKey = process.env.WEBINARJAM_API_KEY) {
   if (!webinarId) throw new Error("Select a WebinarJam webinar ID");
-  const details = webinar.parse((await request("webinar", {webinar_id:webinarId})).webinar);
+  const details = webinar.parse((await request("webinar", {webinar_id:webinarId}, apiKey)).webinar);
   const all: unknown[] = [];
   let expectedTotal: number | undefined;
   for (let page = 1; page <= 1000; page++) {
@@ -141,7 +142,7 @@ export async function fetchWebinarRegistrants(webinarId = process.env.WEBINARJAM
       attended_live: "0",
       attended_replay: "0",
       purchased: "0",
-    });
+    }, apiKey);
     const batch = z
       .object({
         data: z.array(z.unknown()),

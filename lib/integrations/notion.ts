@@ -46,6 +46,35 @@ async function request(path:string,body?:unknown,method=body?"POST":"GET") {
  if(!response.ok)throw Error(`Notion read failed (${response.status}). Check access to Client Events.`);
  return response.json();
 }
+
+// Read only events related to the exact same client as an explicitly configured
+// anchor page. Client names and coincident dates never establish tenant identity.
+export async function notionClientEvents(anchorId: string, expectedClientId: string) {
+ const [container,anchor]=await Promise.all([
+  request(`databases/${uuid.parse(process.env.NOTION_DATABASE_ID)}`),
+  request(`pages/${uuid.parse(anchorId)}`),
+ ]);
+ const sources=z.array(z.object({id:z.string()})).parse(container.data_sources);
+ const page=pageSchema.parse(anchor);
+ if(sources.length!==1 || uuid.parse(page.parent.data_source_id)!==uuid.parse(sources[0].id))throw Error("UGC Notion event is outside Client Events.");
+ const clients=z.array(z.object({id:uuid})).min(1).parse(page.properties.Client?.relation);
+ if(clients.length!==1 || page.properties.Client?.has_more)throw Error("UGC Notion event needs one unambiguous Client relation.");
+ if(clients[0].id!==uuid.parse(expectedClientId))throw Error("UGC Notion Client relation does not match the configured client.");
+ const pages:Page[]=[];let cursor:string|undefined;
+ for(let i=0;i<100;i++){
+  const result=await request(`data_sources/${sources[0].id}/query`,{page_size:100,filter:{property:"Client",relation:{contains:clients[0].id}},...(cursor?{start_cursor:cursor}:{})});
+  pages.push(...z.array(pageSchema).parse(result.results));
+  if(!result.has_more)return pages.map(p=>{
+   const related=z.array(z.object({id:uuid})).parse(p.properties.Client?.relation);
+   if(related.length!==1||related[0].id!==clients[0].id||p.properties.Client?.has_more)throw Error("Notion returned an ambiguous client event.");
+   const patch=notionSessionPatch(p);
+   if(!patch.webinar_date)throw Error("A UGC event is missing its start date and timezone.");
+   return {pageId:p.id,name:(p.properties.Name?.title||[]).map((t:{plain_text:string})=>t.plain_text).join(""),...patch,webinar_date:patch.webinar_date};
+  });
+  const next=z.string().min(1).parse(result.next_cursor);if(next===cursor)throw Error("Notion repeated its cursor.");cursor=next;
+ }
+ throw Error("UGC Notion events exceeded the pagination limit.");
+}
 export async function notionWebinars(webinars:Webinar[]):Promise<Webinar[]> {
  const mapping=notionSessionMap(webinars);const managed=webinars.filter(w=>mapping[w.external_id]);if(!managed.length)return webinars;
  try {
