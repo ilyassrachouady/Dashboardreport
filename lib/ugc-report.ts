@@ -15,6 +15,7 @@ const contact = z.object({
     .array(z.object({ id: z.string(), value: z.unknown() }))
     .default([]),
 });
+const testTags = new Set(["test", "qa", "test-registration", "internal-test"]);
 const registration = z
   .object({
     id: z.union([z.string(), z.number()]),
@@ -22,6 +23,8 @@ const registration = z
     schedule_id: z.union([z.string(), z.number()]),
     event_id: z.union([z.string(), z.number()]).nullish(),
     signup_date: z.string(),
+    first_name: z.string().nullish(),
+    last_name: z.string().nullish(),
     attended_live: z.unknown().optional(),
     attended_replay: z.unknown().optional(),
     utm_source: z.unknown().optional(),
@@ -142,6 +145,10 @@ export function buildUgcReport(input: {
     const people = new Map<string, typeof rows>();
     for (const r of rows) {
       const key = email(r.email);
+      const name = [r.first_name, r.last_name].filter(Boolean).join(" ");
+      const candidates = byEmail.get(key);
+      if (/\b(?:test|qa)\b/i.test(name) ||
+          (candidates?.length === 1 && candidates[0].tags.some(tag => testTags.has(tag.trim().toLowerCase())))) continue;
       people.set(key, [...(people.get(key) || []), r]);
     }
     const sources = new Map<string, number>(),
