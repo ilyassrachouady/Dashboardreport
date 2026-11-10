@@ -51,6 +51,8 @@ export interface UgcSessionReport {
   registrationRecords: number;
   crmMatched: number;
   bookedContacts: number | null;
+  attendeeBookings: number | null;
+  bookingRate: number | null;
   crmUnmatched: number;
   liveAttendees: number | null;
   replayAttendees: number | null;
@@ -160,16 +162,19 @@ export function buildUgcReport(input: {
       days = new Map<string, number>();
     let matched = 0,
       booked = 0,
+      liveBooked = 0,
       live = 0,
       replay = 0,
       liveKnown = true,
       replayKnown = true;
     for (const [key, registrations] of people) {
       const candidates = byEmail.get(key) || [];
+      let hasBooking = false;
       if (candidates.length === 1) {
         matched++;
         const flag = candidates[0].customFields.find(field => field.id === bookingField)?.value;
-        if (typeof flag === "string" && flag.trim().toLowerCase() === "yes") booked++;
+        hasBooking = typeof flag === "string" && flag.trim().toLowerCase() === "yes";
+        if (hasBooking) booked++;
       }
       const providerSources = [
         ...new Set(
@@ -206,7 +211,10 @@ export function buildUgcReport(input: {
         registrations.map((r) => attendanceFlag(r[key]));
       const lf = flags("attended_live"),
         rf = flags("attended_replay");
-      if (lf.includes(true)) live++;
+      if (lf.includes(true)) {
+        live++;
+        if (hasBooking) liveBooked++;
+      }
       else if (!lf.includes(false)) liveKnown = false;
       if (rf.includes(true)) replay++;
       else if (!rf.includes(false)) replayKnown = false;
@@ -220,6 +228,8 @@ export function buildUgcReport(input: {
       event.pitch_attendees > event.peak_attendees
     )
       issues.push("Pitch audience exceeds peak audience.");
+    const attendeeBookings = bookingField && liveKnown && live > 0 && now >= Date.parse(event.webinar_date) ? liveBooked : null;
+    const pitch = event.pitch_attendees;
     return {
       id: `ugc:${provider.details.webinar_id}:${schedule.schedule}:${[...occurrences][0] || schedule.date}`,
       code: `QUE${String(index + 1).padStart(3, "0")}`,
@@ -231,6 +241,8 @@ export function buildUgcReport(input: {
       registrationRecords: rows.length,
       crmMatched: matched,
       bookedContacts: bookingField ? booked : null,
+      attendeeBookings,
+      bookingRate: attendeeBookings != null && pitch != null && pitch > 0 && attendeeBookings <= pitch ? attendeeBookings / pitch : null,
       crmUnmatched: people.size - matched,
       liveAttendees:
         now >= Date.parse(event.webinar_date) && people.size > 0 && liveKnown

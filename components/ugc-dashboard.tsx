@@ -91,6 +91,8 @@ export function UgcDashboard({
             start: session.startsAt,
             registrants: session.registrants,
             booked_contacts: session.bookedContacts,
+            attendee_bookings: session.attendeeBookings,
+            call_booked_rate: pct(session.bookingRate),
             live_attendees: session.liveAttendees,
             peak: session.peak,
             pitch: session.pitch,
@@ -244,6 +246,7 @@ export function UgcDashboard({
                   </section>
                 ))}
               </div>
+              <div className="report-metric-heading"><h3>Webinar conversion rates</h3></div>
               <div className="ugc-rates">
                 <section className="panel ugc-kpi">
                   <span>Attendance rate</span>
@@ -259,6 +262,16 @@ export function UgcDashboard({
                   <small>
                     {session.pitch ?? "—"} at pitch / {session.peak ?? "—"} peak
                   </small>
+                </section>
+                <section className="panel ugc-kpi">
+                  <span>Call booked rate</span>
+                  <strong>{pct(session.bookingRate)}</strong>
+                  <small>{session.attendeeBookings ?? "—"} live attendee bookings / {session.pitch ?? "—"} at pitch</small>
+                </section>
+                <section className="panel ugc-kpi">
+                  <span>Applicant-to-booking rate</span>
+                  <strong>—</strong>
+                  <small>Applicant tracking is unavailable</small>
                 </section>
               </div>
               <div className="ugc-analysis">
