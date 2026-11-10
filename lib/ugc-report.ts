@@ -50,6 +50,7 @@ export interface UgcSessionReport {
   registrants: number;
   registrationRecords: number;
   crmMatched: number;
+  bookedContacts: number | null;
   crmUnmatched: number;
   liveAttendees: number | null;
   replayAttendees: number | null;
@@ -85,6 +86,7 @@ export function buildUgcReport(input: {
   events: UgcEvent[];
   providers: UgcProvider[];
   now?: number;
+  testEmails?: string[];
 }): UgcReport {
   const now = input.now ?? Date.now(),
     contacts = input.contacts.map((c) => contact.parse(c));
@@ -96,6 +98,7 @@ export function buildUgcReport(input: {
   if (new Set(contacts.map((c) => c.id)).size !== contacts.length)
     throw Error("Duplicate CRM contacts in the API snapshot.");
   const email = (s: string) => s.trim().toLowerCase();
+  const testEmails = new Set(input.testEmails?.map(email));
   const byEmail = new Map<string, z.infer<typeof contact>[]>();
   for (const c of contacts)
     if (c.email) {
@@ -106,6 +109,8 @@ export function buildUgcReport(input: {
     (f) => f.fieldKey === "contact.utm_source",
   );
   if (sourceFields.length > 1) throw Error("Ambiguous UGC source field.");
+  const bookingFields = input.fields.filter(f => f.fieldKey === "contact.appointment_booked");
+  const bookingField = bookingFields.length === 1 ? bookingFields[0].id : undefined;
   const schedules = input.providers.flatMap((p) =>
     p.details.schedules.map((s) => ({
       provider: p,
@@ -147,20 +152,25 @@ export function buildUgcReport(input: {
       const key = email(r.email);
       const name = [r.first_name, r.last_name].filter(Boolean).join(" ");
       const candidates = byEmail.get(key);
-      if (/\b(?:test|qa)\b/i.test(name) ||
+      if (testEmails.has(key) || /\b(?:test|qa)\b/i.test(name) ||
           (candidates?.length === 1 && candidates[0].tags.some(tag => testTags.has(tag.trim().toLowerCase())))) continue;
       people.set(key, [...(people.get(key) || []), r]);
     }
     const sources = new Map<string, number>(),
       days = new Map<string, number>();
     let matched = 0,
+      booked = 0,
       live = 0,
       replay = 0,
       liveKnown = true,
       replayKnown = true;
     for (const [key, registrations] of people) {
       const candidates = byEmail.get(key) || [];
-      if (candidates.length === 1) matched++;
+      if (candidates.length === 1) {
+        matched++;
+        const flag = candidates[0].customFields.find(field => field.id === bookingField)?.value;
+        if (typeof flag === "string" && flag.trim().toLowerCase() === "yes") booked++;
+      }
       const providerSources = [
         ...new Set(
           registrations
@@ -220,6 +230,7 @@ export function buildUgcReport(input: {
       registrants: people.size,
       registrationRecords: rows.length,
       crmMatched: matched,
+      bookedContacts: bookingField ? booked : null,
       crmUnmatched: people.size - matched,
       liveAttendees:
         now >= Date.parse(event.webinar_date) && people.size > 0 && liveKnown

@@ -91,6 +91,7 @@ export async function loadUgcReport(syncNotion = false) {
       .parse(fields.customFields),
     events,
     providers: [provider],
+    testEmails: process.env.UGC_TEST_EMAILS?.split(","),
   });
   if (syncNotion) {
     const webinars = report.sessions.map((s) => ({

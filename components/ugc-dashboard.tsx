@@ -90,6 +90,7 @@ export function UgcDashboard({
             name: session.name,
             start: session.startsAt,
             registrants: session.registrants,
+            booked_contacts: session.bookedContacts,
             live_attendees: session.liveAttendees,
             peak: session.peak,
             pitch: session.pitch,
@@ -233,6 +234,7 @@ export function UgcDashboard({
                 {[
                   ["Registrants", session.registrants],
                   ["Live attendees", session.liveAttendees],
+                  ["Booked contacts", session.bookedContacts],
                   ["Peak audience", session.peak],
                   ["People at pitch", session.pitch],
                 ].map(([label, value]) => (
@@ -342,7 +344,7 @@ export function UgcDashboard({
                     {session.crmUnmatched} unmatched or ambiguous.
                   </p>
                   <p>Notion: peak, pitch and session timing.</p>
-                  <p>Application and booking tracking: not connected.</p>
+                  <p>Booked contacts use the GHL Appointment Booked flag for matched webinar registrants.</p>
                 </div>
               </details>
             </>
